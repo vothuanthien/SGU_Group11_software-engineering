@@ -1,0 +1,102 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dinhguide}
+      POSTGRES_USER: ${POSTGRES_USER:-dinhguide}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local_demo_password_change_me}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  analytics-migration:
+    image: postgres:16-alpine
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:-dinhguide}
+      PGUSER: ${POSTGRES_USER:-dinhguide}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-local_demo_password_change_me}
+    volumes:
+      - ./database/migrations/002_visitor_analytics.sql:/migrations/002_visitor_analytics.sql:ro
+    command: ["sh", "-c", "psql -v ON_ERROR_STOP=1 -f /migrations/002_visitor_analytics.sql"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+  auth-service:
+    image: ghcr.io/${IMAGE_OWNER:-local}/dinh-guide-auth-service:${IMAGE_TAG:-local}
+    build: ./backend/auth-service
+    environment:
+      PORT: 4101
+      DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:-local_demo_password_change_me}@postgres:5432/${POSTGRES_DB:-dinhguide}
+      JWT_SECRET: ${JWT_SECRET:-replace_with_a_long_random_secret_for_local_demo}
+    depends_on: { postgres: { condition: service_healthy } }
+    restart: unless-stopped
+  attraction-service:
+    image: ghcr.io/${IMAGE_OWNER:-local}/dinh-guide-attraction-service:${IMAGE_TAG:-local}
+    build: ./backend/attraction-service
+    environment:
+      PORT: 4102
+      JWT_SECRET: ${JWT_SECRET:-replace_with_a_long_random_secret_for_local_demo}
+      DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:-local_demo_password_change_me}@postgres:5432/${POSTGRES_DB:-dinhguide}
+    depends_on: { postgres: { condition: service_healthy } }
+    restart: unless-stopped
+  narration-service:
+    image: ghcr.io/${IMAGE_OWNER:-local}/dinh-guide-narration-service:${IMAGE_TAG:-local}
+    build: ./backend/narration-service
+    environment:
+      PORT: 4103
+      DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:-local_demo_password_change_me}@postgres:5432/${POSTGRES_DB:-dinhguide}
+      ATTRACTION_SERVICE_URL: http://attraction-service:4102
+    depends_on: { postgres: { condition: service_healthy } }
+    restart: unless-stopped
+  feedback-service:
+    image: ghcr.io/${IMAGE_OWNER:-local}/dinh-guide-feedback-service:${IMAGE_TAG:-local}
+    build: ./backend/feedback-service
+    environment:
+      PORT: 4104
+      DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:-local_demo_password_change_me}@postgres:5432/${POSTGRES_DB:-dinhguide}
+      ATTRACTION_SERVICE_URL: http://attraction-service:4102
+      JWT_SECRET: ${JWT_SECRET:-replace_with_a_long_random_secret_for_local_demo}
+    depends_on: { postgres: { condition: service_healthy } }
+    restart: unless-stopped
+  analytics-service:
+    image: ghcr.io/${IMAGE_OWNER:-local}/dinh-guide-analytics-service:${IMAGE_TAG:-local}
+    build: ./backend/analytics-service
+    environment:
+      PORT: 4105
+      DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:-local_demo_password_change_me}@postgres:5432/${POSTGRES_DB:-dinhguide}
+      JWT_SECRET: ${JWT_SECRET:-replace_with_a_long_random_secret_for_local_demo}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      analytics-migration:
+        condition: service_completed_successfully
+    restart: unless-stopped
+  api-gateway:
+    image: ghcr.io/${IMAGE_OWNER:-local}/dinh-guide-api-gateway:${IMAGE_TAG:-local}
+    build: ./backend/api-gateway
+    environment:
+      PORT: 4000
+      AUTH_SERVICE_URL: http://auth-service:4101
+      ATTRACTION_SERVICE_URL: http://attraction-service:4102
+      NARRATION_SERVICE_URL: http://narration-service:4103
+      FEEDBACK_SERVICE_URL: http://feedback-service:4104
+      ANALYTICS_SERVICE_URL: http://analytics-service:4105
+    depends_on: [auth-service, attraction-service, narration-service, feedback-service, analytics-service]
+    ports: ["${GATEWAY_PORT:-4000}:4000"]
+    restart: unless-stopped
+  frontend:
+    image: ghcr.io/${IMAGE_OWNER:-local}/dinh-guide-frontend:${IMAGE_TAG:-local}
+    build: ./frontend
+    ports: ["${FRONTEND_PORT:-8080}:80"]
+    depends_on: [api-gateway]
+    restart: unless-stopped
+volumes:
+  pgdata:
