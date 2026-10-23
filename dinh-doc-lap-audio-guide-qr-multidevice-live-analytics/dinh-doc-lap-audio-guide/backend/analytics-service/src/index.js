@@ -56,6 +56,8 @@ app.get('/analytics/summary', admin, async (req, res) => {
     const totalsQuery = await pool.query(
       `SELECT
         COUNT(DISTINCT visitor_id)::int AS unique_visitors,
+        COUNT(DISTINCT visitor_id) FILTER (WHERE created_at >= CURRENT_DATE)::int AS visitors_today,
+        COUNT(DISTINCT visitor_id) FILTER (WHERE created_at >= NOW() - INTERVAL '5 minutes')::int AS active_now,
         COUNT(DISTINCT visitor_id) FILTER (WHERE event_type = 'narration_started')::int AS unique_listeners,
         COUNT(*) FILTER (WHERE event_type = 'app_opened')::int AS app_opens,
         COUNT(*) FILTER (WHERE event_type = 'qr_scan')::int AS qr_scans,

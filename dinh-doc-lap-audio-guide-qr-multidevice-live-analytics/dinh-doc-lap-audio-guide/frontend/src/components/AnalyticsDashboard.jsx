@@ -3,7 +3,7 @@ import api from '../api.js';
 
 const empty = {
   periodDays: 30,
-  totals: { unique_visitors: 0, unique_listeners: 0, app_opens: 0, qr_scans: 0, place_opens: 0, confirmed_visits: 0, listens_started: 0, listens_completed: 0 },
+  totals: { unique_visitors: 0, visitors_today: 0, active_now: 0, unique_listeners: 0, app_opens: 0, qr_scans: 0, place_opens: 0, confirmed_visits: 0, listens_started: 0, listens_completed: 0 },
   languageBreakdown: [],
   topAttractions: [],
   visitorHistory: [],
@@ -48,6 +48,13 @@ export default function AnalyticsDashboard({ lang = 'vi' }) {
   const totals = data.totals || empty.totals;
   const peak = Math.max(1, ...(data.daily || []).map((x) => Math.max(x.qr_scans || 0, x.listens || 0, x.visits || 0)));
   const langTotal = (data.languageBreakdown || []).reduce((sum, item) => sum + Number(item.listens || 0), 0);
+  const completionRate = Number(totals.listens_started || 0)
+    ? Math.round(Number(totals.listens_completed || 0) / Number(totals.listens_started) * 100)
+    : 0;
+
+  const engagementRate = Number(totals.unique_visitors || 0)
+    ? Math.round(Number(totals.unique_listeners || 0) / Number(totals.unique_visitors) * 100)
+    : 0;
   const languageLabel = (value) => value === 'vi' ? msg('Tiếng Việt', 'Vietnamese') : value === 'en' ? msg('Tiếng Anh', 'English') : msg('Chưa có dữ liệu', 'No data yet');
 
   return <section className="analytics-dashboard">
@@ -77,6 +84,8 @@ export default function AnalyticsDashboard({ lang = 'vi' }) {
 
     <div className="stats analytics-stats">
       <div><strong>{Number(totals.unique_visitors || 0).toLocaleString()}</strong><span>{msg('Khách ẩn danh', 'Unique anonymous visitors')}</span></div>
+      <div className="live-stat"><strong><i />{Number(totals.active_now || 0).toLocaleString()}</strong><span>{msg('Đang hoạt động (5 phút)', 'Active now (5 minutes)')}</span></div>
+      <div><strong>{Number(totals.visitors_today || 0).toLocaleString()}</strong><span>{msg('Khách hôm nay', 'Visitors today')}</span></div>
       <div><strong>{Number(totals.unique_listeners || 0).toLocaleString()}</strong><span>{msg('Người đã nghe (ẩn danh)', 'Unique listeners (anonymous)')}</span></div>
       <div><strong>{Number(totals.app_opens || 0).toLocaleString()}</strong><span>{msg('Lượt mở ứng dụng', 'App sessions opened')}</span></div>
       <div><strong>{Number(totals.qr_scans || 0).toLocaleString()}</strong><span>{msg('Lượt mở liên kết QR', 'QR link opens')}</span></div>
@@ -85,6 +94,20 @@ export default function AnalyticsDashboard({ lang = 'vi' }) {
       <div><strong>{Number(totals.listens_completed || 0).toLocaleString()}</strong><span>{msg('Lượt nghe hoàn tất', 'Completed narrations')}</span></div>
       <div><strong>{Number(totals.place_opens || 0).toLocaleString()}</strong><span>{msg('Lượt mở trang địa điểm', 'Place page views')}</span></div>
     </div>
+    
+      <section className="analytics-funnel form-card">
+      <div className="section-head"><div><p className="eyebrow">ENGAGEMENT FUNNEL</p><h3>{msg('Hành trình sử dụng', 'Visitor journey')}</h3></div><span className="small">{msg('Không thu thập danh tính thật', 'No real identity collected')}</span></div>
+      <div className="funnel-grid">
+        <div><span>{msg('Mở ứng dụng', 'App opens')}</span><strong>{Number(totals.app_opens || 0).toLocaleString()}</strong></div><b>→</b>
+        <div><span>{msg('Mở địa điểm', 'Place views')}</span><strong>{Number(totals.place_opens || 0).toLocaleString()}</strong></div><b>→</b>
+        <div><span>{msg('Bắt đầu nghe', 'Started listening')}</span><strong>{Number(totals.listens_started || 0).toLocaleString()}</strong></div><b>→</b>
+        <div><span>{msg('Nghe hoàn tất', 'Completed')}</span><strong>{Number(totals.listens_completed || 0).toLocaleString()}</strong></div>
+      </div>
+      <div className="rate-grid">
+        <div><span>{msg('Tỷ lệ khách có nghe', 'Visitor listening rate')}</span><strong>{engagementRate}%</strong><div className="bar-track"><i style={{ width: `${Math.min(100, engagementRate)}%` }} /></div></div>
+        <div><span>{msg('Tỷ lệ nghe hoàn tất', 'Completion rate')}</span><strong>{completionRate}%</strong><div className="bar-track"><i style={{ width: `${Math.min(100, completionRate)}%` }} /></div></div>
+      </div>
+    </section>
 
     <div className="analytics-grid">
       <section className="form-card">
