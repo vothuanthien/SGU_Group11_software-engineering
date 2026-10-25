@@ -3,7 +3,5 @@ node_modules
 dist
 coverage
 .DS_Store
-.env
 .tools/
-node_modules/
-dist/
+
