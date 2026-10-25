@@ -1,1 +1,5 @@
-import { describe,it,expect } from 'vitest'; describe('attraction service',()=>{it('supports stable attraction ids',()=>expect('main-building').toContain('-'))});
+import { describe, it, expect } from "vitest";
+describe("attraction service", () => {
+  it("supports stable attraction ids", () =>
+    expect("main-building").toContain("-"));
+});

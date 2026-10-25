@@ -1,7 +1,7 @@
 name: CD
 on:
   push:
-    tags: ['v*']
+    tags: ["v*"]
 permissions:
   contents: read
   packages: write
@@ -11,7 +11,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [frontend, backend/api-gateway, backend/auth-service, backend/attraction-service, backend/narration-service, backend/feedback-service, backend/analytics-service]
+        package:
+          [
+            frontend,
+            backend/api-gateway,
+            backend/auth-service,
+            backend/attraction-service,
+            backend/narration-service,
+            backend/feedback-service,
+            backend/analytics-service,
+          ]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -83,4 +92,3 @@ jobs:
             docker compose up -d --remove-orphans
             sleep 8
             curl --fail http://localhost:4000/api/v1/health
-

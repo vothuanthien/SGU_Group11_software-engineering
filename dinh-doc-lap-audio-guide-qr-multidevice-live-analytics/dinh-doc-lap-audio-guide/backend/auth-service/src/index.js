@@ -1,6 +1,74 @@
-import { app,pool } from './base.js'; import bcrypt from 'bcryptjs'; import jwt from 'jsonwebtoken';
-const secret=process.env.JWT_SECRET||'local_only_change_this_secret';
-app.post('/login',async(req,res)=>{ const {email,password}=req.body||{}; if(!email||!password) return res.status(400).json({error:{code:'VALIDATION_ERROR',message:'Cần email và mật khẩu'}}); try { const r=await pool.query('SELECT id,email,password_hash,role FROM users WHERE email=$1',[String(email).toLowerCase()]); const u=r.rows[0]; if(!u||!(await bcrypt.compare(String(password),u.password_hash))) return res.status(401).json({error:{code:'INVALID_CREDENTIALS',message:'Email hoặc mật khẩu không đúng'}}); const token=jwt.sign({sub:u.id,email:u.email,role:u.role},secret,{expiresIn:'8h'}); res.json({data:{token,user:{id:u.id,email:u.email,role:u.role}}}); } catch(e){ console.error(e); res.status(500).json({error:{code:'AUTH_ERROR',message:'Không thể đăng nhập'}}); }});
-app.get('/me',(req,res)=>{ const h=req.headers.authorization||''; try { if(!h.startsWith('Bearer ')) throw Error(); const user=jwt.verify(h.slice(7),secret); res.json({data:{user}}); } catch { res.status(401).json({error:{code:'UNAUTHORIZED',message:'Token không hợp lệ'}}); }});
-async function seedAdmin(){try{const r=await pool.query('SELECT id FROM users WHERE email=$1',['admin@dinhguide.local']);if(!r.rowCount){const hash=await bcrypt.hash('Admin123!',10);await pool.query('INSERT INTO users(email,password_hash,role) VALUES($1,$2,$3)',['admin@dinhguide.local',hash,'admin']);console.log('Created local demo admin account');}}catch(e){console.error('Admin seed failed',e.message)}}
-seedAdmin().finally(()=>app.listen(process.env.PORT||4101,()=>console.log('auth-service ready')));
+import { app, pool } from "./base.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+const secret = process.env.JWT_SECRET || "local_only_change_this_secret";
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email || !password)
+    return res
+      .status(400)
+      .json({
+        error: { code: "VALIDATION_ERROR", message: "Cần email và mật khẩu" },
+      });
+  try {
+    const r = await pool.query(
+      "SELECT id,email,password_hash,role FROM users WHERE email=$1",
+      [String(email).toLowerCase()],
+    );
+    const u = r.rows[0];
+    if (!u || !(await bcrypt.compare(String(password), u.password_hash)))
+      return res
+        .status(401)
+        .json({
+          error: {
+            code: "INVALID_CREDENTIALS",
+            message: "Email hoặc mật khẩu không đúng",
+          },
+        });
+    const token = jwt.sign(
+      { sub: u.id, email: u.email, role: u.role },
+      secret,
+      { expiresIn: "8h" },
+    );
+    res.json({
+      data: { token, user: { id: u.id, email: u.email, role: u.role } },
+    });
+  } catch (e) {
+    console.error(e);
+    res
+      .status(500)
+      .json({ error: { code: "AUTH_ERROR", message: "Không thể đăng nhập" } });
+  }
+});
+app.get("/me", (req, res) => {
+  const h = req.headers.authorization || "";
+  try {
+    if (!h.startsWith("Bearer ")) throw Error();
+    const user = jwt.verify(h.slice(7), secret);
+    res.json({ data: { user } });
+  } catch {
+    res
+      .status(401)
+      .json({ error: { code: "UNAUTHORIZED", message: "Token không hợp lệ" } });
+  }
+});
+async function seedAdmin() {
+  try {
+    const r = await pool.query("SELECT id FROM users WHERE email=$1", [
+      "admin@dinhguide.local",
+    ]);
+    if (!r.rowCount) {
+      const hash = await bcrypt.hash("Admin123!", 10);
+      await pool.query(
+        "INSERT INTO users(email,password_hash,role) VALUES($1,$2,$3)",
+        ["admin@dinhguide.local", hash, "admin"],
+      );
+      console.log("Created local demo admin account");
+    }
+  } catch (e) {
+    console.error("Admin seed failed", e.message);
+  }
+}
+seedAdmin().finally(() =>
+  app.listen(process.env.PORT || 4101, () => console.log("auth-service ready")),
+);

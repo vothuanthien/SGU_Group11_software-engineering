@@ -1,7 +1,76 @@
-import express from 'express'; import helmet from 'helmet'; import cors from 'cors'; import rateLimit from 'express-rate-limit'; import { createProxyMiddleware } from 'http-proxy-middleware';
-const app=express(); app.use(helmet()); app.use(cors()); app.use(rateLimit({windowMs:60000,max:180,standardHeaders:true,legacyHeaders:false,keyGenerator:(req)=>(req.get('x-real-ip')||req.ip)}));
-app.get('/api/v1/health',async(_req,res)=>{const services={};for(const [name,url] of Object.entries({auth:process.env.AUTH_SERVICE_URL,attraction:process.env.ATTRACTION_SERVICE_URL,narration:process.env.NARRATION_SERVICE_URL,feedback:process.env.FEEDBACK_SERVICE_URL,analytics:process.env.ANALYTICS_SERVICE_URL})){try{const r=await fetch(`${url}/health`,{signal:AbortSignal.timeout(1800)});services[name]=r.ok?'ok':'unavailable'}catch{services[name]='unavailable'}}const ok=Object.values(services).every(x=>x==='ok');res.status(ok?200:503).json({status:ok?'ok':'degraded',services});});
-const routes=[['/api/v1/auth',process.env.AUTH_SERVICE_URL,''],['/api/v1/attractions',process.env.ATTRACTION_SERVICE_URL,'/attractions'],['/api/v1/tours',process.env.ATTRACTION_SERVICE_URL,'/tours'],['/api/v1/narrations',process.env.NARRATION_SERVICE_URL,'/narrations'],['/api/v1/feedback',process.env.FEEDBACK_SERVICE_URL,'/feedback'],['/api/v1/analytics',process.env.ANALYTICS_SERVICE_URL,'/analytics']];
-for(const [prefix,target,resource] of routes){app.use(prefix,createProxyMiddleware({target,changeOrigin:true,timeout:5000,proxyTimeout:5000,pathRewrite:(path)=>resource+(path==='/'?'':path),on:{error:(_err,_req,res)=>{if(!res.headersSent)res.writeHead(502,{'Content-Type':'application/json'});res.end(JSON.stringify({error:{code:'UPSTREAM_UNAVAILABLE',message:'Dịch vụ phía sau tạm thời không khả dụng'}}));}}}));}
-app.get('/api/v1',(_req,res)=>res.json({name:'Dinh Doc Lap Audio Guide API',version:'1.0.0'}));
-app.listen(process.env.PORT||4000,()=>console.log('API Gateway ready'));
+import express from "express";
+import helmet from "helmet";
+import cors from "cors";
+import rateLimit from "express-rate-limit";
+import { createProxyMiddleware } from "http-proxy-middleware";
+const app = express();
+app.use(helmet());
+app.use(cors());
+app.use(
+  rateLimit({
+    windowMs: 60000,
+    max: 180,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => req.get("x-real-ip") || req.ip,
+  }),
+);
+app.get("/api/v1/health", async (_req, res) => {
+  const services = {};
+  for (const [name, url] of Object.entries({
+    auth: process.env.AUTH_SERVICE_URL,
+    attraction: process.env.ATTRACTION_SERVICE_URL,
+    narration: process.env.NARRATION_SERVICE_URL,
+    feedback: process.env.FEEDBACK_SERVICE_URL,
+    analytics: process.env.ANALYTICS_SERVICE_URL,
+  })) {
+    try {
+      const r = await fetch(`${url}/health`, {
+        signal: AbortSignal.timeout(1800),
+      });
+      services[name] = r.ok ? "ok" : "unavailable";
+    } catch {
+      services[name] = "unavailable";
+    }
+  }
+  const ok = Object.values(services).every((x) => x === "ok");
+  res.status(ok ? 200 : 503).json({ status: ok ? "ok" : "degraded", services });
+});
+const routes = [
+  ["/api/v1/auth", process.env.AUTH_SERVICE_URL, ""],
+  ["/api/v1/attractions", process.env.ATTRACTION_SERVICE_URL, "/attractions"],
+  ["/api/v1/tours", process.env.ATTRACTION_SERVICE_URL, "/tours"],
+  ["/api/v1/narrations", process.env.NARRATION_SERVICE_URL, "/narrations"],
+  ["/api/v1/feedback", process.env.FEEDBACK_SERVICE_URL, "/feedback"],
+  ["/api/v1/analytics", process.env.ANALYTICS_SERVICE_URL, "/analytics"],
+];
+for (const [prefix, target, resource] of routes) {
+  app.use(
+    prefix,
+    createProxyMiddleware({
+      target,
+      changeOrigin: true,
+      timeout: 5000,
+      proxyTimeout: 5000,
+      pathRewrite: (path) => resource + (path === "/" ? "" : path),
+      on: {
+        error: (_err, _req, res) => {
+          if (!res.headersSent)
+            res.writeHead(502, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              error: {
+                code: "UPSTREAM_UNAVAILABLE",
+                message: "Dịch vụ phía sau tạm thời không khả dụng",
+              },
+            }),
+          );
+        },
+      },
+    }),
+  );
+}
+app.get("/api/v1", (_req, res) =>
+  res.json({ name: "Dinh Doc Lap Audio Guide API", version: "1.0.0" }),
+);
+app.listen(process.env.PORT || 4000, () => console.log("API Gateway ready"));

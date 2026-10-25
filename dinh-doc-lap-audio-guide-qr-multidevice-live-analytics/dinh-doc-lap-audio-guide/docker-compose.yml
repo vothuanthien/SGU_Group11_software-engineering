@@ -24,7 +24,12 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD:-local_demo_password_change_me}
     volumes:
       - ./database/migrations/002_visitor_analytics.sql:/migrations/002_visitor_analytics.sql:ro
-    command: ["sh", "-c", "psql -v ON_ERROR_STOP=1 -f /migrations/002_visitor_analytics.sql"]
+    command:
+      [
+        "sh",
+        "-c",
+        "psql -v ON_ERROR_STOP=1 -f /migrations/002_visitor_analytics.sql",
+      ]
     depends_on:
       postgres:
         condition: service_healthy
@@ -89,7 +94,14 @@ services:
       NARRATION_SERVICE_URL: http://narration-service:4103
       FEEDBACK_SERVICE_URL: http://feedback-service:4104
       ANALYTICS_SERVICE_URL: http://analytics-service:4105
-    depends_on: [auth-service, attraction-service, narration-service, feedback-service, analytics-service]
+    depends_on:
+      [
+        auth-service,
+        attraction-service,
+        narration-service,
+        feedback-service,
+        analytics-service,
+      ]
     ports: ["${GATEWAY_PORT:-4000}:4000"]
     restart: unless-stopped
   frontend:

@@ -1,1 +1,5 @@
-import { describe,it,expect } from 'vitest'; describe('feedback validation',()=>{it('rating range is 1 to 5',()=>expect([1,2,3,4,5].every(n=>n>=1&&n<=5)).toBe(true))});
+import { describe, it, expect } from "vitest";
+describe("feedback validation", () => {
+  it("rating range is 1 to 5", () =>
+    expect([1, 2, 3, 4, 5].every((n) => n >= 1 && n <= 5)).toBe(true));
+});

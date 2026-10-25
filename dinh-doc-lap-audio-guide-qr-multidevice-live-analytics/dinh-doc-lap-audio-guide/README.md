@@ -3,6 +3,7 @@
 MVP chạy bằng Docker Compose: React/Vite, API Gateway, 5 backend service nghiệp vụ (Auth, Attraction, Narration, Feedback, Analytics), PostgreSQL, seed dữ liệu, test cơ bản và GitHub Actions CI/CD mẫu.
 
 ## Chạy local
+
 1. Cài Docker Desktop và mở Docker.
 2. Sao chép `.env.example` thành `.env` (cấu hình mặc định chỉ dành cho demo local).
 3. Chạy `docker compose up --build` tại thư mục dự án.
@@ -12,6 +13,7 @@ MVP chạy bằng Docker Compose: React/Vite, API Gateway, 5 backend service ngh
 Compose tự khởi tạo schema và dữ liệu mẫu khi PostgreSQL tạo volume lần đầu; dịch vụ `analytics-migration` áp dụng migration để hỗ trợ cả volume cũ. Khi cập nhật ZIP có thay đổi migration, chạy `docker compose up --build --force-recreate -d` để chắc chắn container migration chạy lại; lệnh này không xóa volume dữ liệu. Nếu cần reset toàn bộ dữ liệu demo: `docker compose down -v` rồi `docker compose up --build`.
 
 ## Sử dụng QR và dashboard thống kê
+
 - Đăng nhập ở mục **Quản trị** → **Mã QR**. Nếu giao diện được mở tại `localhost`, hãy chạy `ipconfig` trên máy tính, tìm IPv4 Address của card Wi-Fi/Ethernet, rồi nhập `http://IP-IPv4:8080` (ví dụ `http://192.168.1.20:8080`) trước khi tải QR. Giao diện cảnh báo nếu URL còn trỏ tới localhost.
 - Để thử quét bằng nhiều điện thoại: tất cả thiết bị phải cùng Wi-Fi với máy tính chạy Docker; máy tính phải bật và ứng dụng đang chạy. Quét bằng camera mặc định của điện thoại và mở liên kết. Nếu không truy cập được, kiểm tra Windows Defender Firewall cho phép truy cập mạng Private vào Docker/port 8080. Không cần và không nên mở port trên router Internet chỉ để thử LAN.
 - Để khách sử dụng ở địa điểm tham quan qua mạng di động hoặc Wi-Fi khác, cần triển khai ứng dụng lên máy chủ/domain công khai có HTTPS, sau đó nhập domain đó khi tạo QR. Mã QR không thể làm địa chỉ `localhost` hay IP nội bộ truy cập được từ Internet.
@@ -19,6 +21,7 @@ Compose tự khởi tạo schema và dữ liệu mẫu khi PostgreSQL tạo volu
 - “Khách ẩn danh” là trình duyệt/thiết bị được nhận diện bằng UUID trong localStorage, không phải danh tính thật hay số người được xác minh. Nếu đổi thiết bị/trình duyệt hoặc xóa storage, một người có thể được tính là khách mới. Lượt QR được đếm khi liên kết gắn `source=qr` được mở; việc chỉ mở camera xem QR mà không bấm vào liên kết không thể được web app phát hiện. “Đã tham quan” là thao tác khách chủ động bấm nút đánh dấu. Container `analytics-migration` thoát với mã 0 sau khi migration chạy thành công là bình thường.
 
 ## Các thành phần
+
 - `frontend`: React, Vite, React Router, Leaflet, Web Speech API; khách có thể xem địa điểm, nghe nội dung bằng trình đọc của trình duyệt, bật GPS hoặc chọn thủ công.
 - `api-gateway`: điểm vào duy nhất cho frontend, proxy theo nhóm API và kiểm tra health.
 - `auth-service`: đăng nhập, JWT, bcrypt.
@@ -29,6 +32,7 @@ Compose tự khởi tạo schema và dữ liệu mẫu khi PostgreSQL tạo volu
 - `database/init.sql`: schema + seed. `database/migrations/001_narration_publication.sql` bổ sung cột công bố thuyết minh cho database cũ; `002_visitor_analytics.sql` tạo bảng sự kiện thống kê. PostgreSQL dùng chung trong demo, các bảng tách theo nghiệp vụ.
 
 ## API chính
+
 - `GET /api/v1/health`
 - `POST /api/v1/auth/login` `{ "email":"admin@dinhguide.local", "password":"Admin123!" }`
 - `GET /api/v1/attractions`, `GET /api/v1/attractions/:id`, `GET /api/v1/tours`
@@ -44,14 +48,17 @@ Compose tự khởi tạo schema và dữ liệu mẫu khi PostgreSQL tạo volu
 Phản hồi API dùng JSON; admin endpoint được kiểm tra JWT và role ở service. Chi tiết thêm xem `docs/api.md`.
 
 ## Kiểm thử
+
 Mỗi service có `npm test`; trong thư mục service chạy `npm install` trước. CI workflow chạy lint/test/build theo các package. Có test unit cho logic khoảng cách, kiểm tra dữ liệu và health route cơ bản. Cần chạy `docker compose up --build` để kiểm thử tích hợp end-to-end trong môi trường Docker.
 
 ## CI và CD
+
 - `.github/workflows/ci.yml`: cài dependencies, chạy test/build và build image.
 - `.github/workflows/cd.yml`: với tag `v*`, chạy verify lint/test/build trước; chỉ sau khi verify thành công mới build/push image lên GHCR và tùy chọn SSH deploy nếu khai báo secrets `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_PATH`. Khi deploy, đặt `IMAGE_OWNER` bằng owner/repository namespace trên GHCR và `IMAGE_TAG` bằng tag phát hành trong môi trường remote.
 - Không có máy chủ/Secrets thì CD không thực hiện deploy; chạy local vẫn hoạt động. Đừng dùng mật khẩu demo ở production.
 
 ## Giới hạn MVP cần biết
+
 - Nội dung địa điểm được cung cấp là dữ liệu demo ngắn; cần biên tập/đối chiếu với nguồn chính thức của Dinh Độc Lập trước khi dùng công khai. Các URL nguồn chính thức được để trong dữ liệu.
 - Thuyết minh sử dụng Web Speech API, giọng đọc phụ thuộc trình duyệt/hệ điều hành; chưa kèm file audio thu âm sẵn.
 - GPS kích hoạt dùng tọa độ cấu hình demo và bán kính 80m; GPS trong nhà không đảm bảo chính xác. Chế độ chọn thủ công luôn có sẵn.
@@ -60,6 +67,7 @@ Mỗi service có `npm test`; trong thư mục service chạy `npm install` trư
 - GitHub Actions là cấu hình mẫu, chưa thể tuyên bố CI/CD đã chạy thành công trong repository thật. Chạy các lệnh kiểm thử để xác nhận trên máy của bạn.
 
 ## Sơ đồ kiến trúc
+
 ```mermaid
 flowchart TD
   U[Visitor / Admin] --> FE[React Frontend]
