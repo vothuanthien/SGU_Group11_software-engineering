@@ -3,6 +3,7 @@ import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { createProxyMiddleware } from "http-proxy-middleware";
+import { buildGatewayRoutes } from "./routes.js";
 const app = express();
 app.use(helmet());
 app.use(cors());
@@ -19,8 +20,8 @@ app.get("/api/v1/health", async (_req, res) => {
   const services = {};
   for (const [name, url] of Object.entries({
     auth: process.env.AUTH_SERVICE_URL,
-    attraction: process.env.ATTRACTION_SERVICE_URL,
-    narration: process.env.NARRATION_SERVICE_URL,
+    content: process.env.CONTENT_SERVICE_URL,
+    navigation: process.env.NAVIGATION_SERVICE_URL,
     feedback: process.env.FEEDBACK_SERVICE_URL,
     analytics: process.env.ANALYTICS_SERVICE_URL,
   })) {
@@ -36,15 +37,8 @@ app.get("/api/v1/health", async (_req, res) => {
   const ok = Object.values(services).every((x) => x === "ok");
   res.status(ok ? 200 : 503).json({ status: ok ? "ok" : "degraded", services });
 });
-const routes = [
-  ["/api/v1/auth", process.env.AUTH_SERVICE_URL, ""],
-  ["/api/v1/attractions", process.env.ATTRACTION_SERVICE_URL, "/attractions"],
-  ["/api/v1/tours", process.env.ATTRACTION_SERVICE_URL, "/tours"],
-  ["/api/v1/narrations", process.env.NARRATION_SERVICE_URL, "/narrations"],
-  ["/api/v1/feedback", process.env.FEEDBACK_SERVICE_URL, "/feedback"],
-  ["/api/v1/analytics", process.env.ANALYTICS_SERVICE_URL, "/analytics"],
-];
-for (const [prefix, target, resource] of routes) {
+const routes = buildGatewayRoutes();
+for (const { prefix, target, resource } of routes) {
   app.use(
     prefix,
     createProxyMiddleware({
