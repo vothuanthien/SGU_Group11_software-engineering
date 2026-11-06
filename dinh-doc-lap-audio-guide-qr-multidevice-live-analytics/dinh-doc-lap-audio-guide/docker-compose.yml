@@ -14,7 +14,7 @@ services:
       timeout: 3s
       retries: 20
     restart: unless-stopped
-  analytics-migration:
+  database-migration:
     image: postgres:16-alpine
     environment:
       PGHOST: postgres
@@ -23,12 +23,13 @@ services:
       PGUSER: ${POSTGRES_USER:-dinhguide}
       PGPASSWORD: ${POSTGRES_PASSWORD:-local_demo_password_change_me}
     volumes:
+      - ./database/migrations/001_narration_publication.sql:/migrations/001_narration_publication.sql:ro
       - ./database/migrations/002_visitor_analytics.sql:/migrations/002_visitor_analytics.sql:ro
     command:
       [
         "sh",
         "-c",
-        "psql -v ON_ERROR_STOP=1 -f /migrations/002_visitor_analytics.sql",
+        "psql -v ON_ERROR_STOP=1 -f /migrations/001_narration_publication.sql && psql -v ON_ERROR_STOP=1 -f /migrations/002_visitor_analytics.sql",
       ]
     depends_on:
       postgres:
@@ -61,6 +62,23 @@ services:
       ATTRACTION_SERVICE_URL: http://attraction-service:4102
     depends_on: { postgres: { condition: service_healthy } }
     restart: unless-stopped
+  content-service:
+    image: ghcr.io/${IMAGE_OWNER:-local}/dinh-guide-content-service:${IMAGE_TAG:-local}
+    build: ./backend/content-service
+    environment:
+      PORT: 4106
+      ATTRACTION_SERVICE_URL: http://attraction-service:4102
+      NARRATION_SERVICE_URL: http://narration-service:4103
+    depends_on: [attraction-service, narration-service]
+    restart: unless-stopped
+  navigation-service:
+    image: ghcr.io/${IMAGE_OWNER:-local}/dinh-guide-navigation-service:${IMAGE_TAG:-local}
+    build: ./backend/navigation-service
+    environment:
+      PORT: 4107
+      ATTRACTION_SERVICE_URL: http://attraction-service:4102
+    depends_on: [attraction-service]
+    restart: unless-stopped
   feedback-service:
     image: ghcr.io/${IMAGE_OWNER:-local}/dinh-guide-feedback-service:${IMAGE_TAG:-local}
     build: ./backend/feedback-service
@@ -81,7 +99,27 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      analytics-migration:
+      database-migration:
+        condition: service_completed_successfully
+    restart: unless-stopped
+  sqlserver-sync:
+    image: ghcr.io/${IMAGE_OWNER:-local}/dinh-guide-sqlserver-sync:${IMAGE_TAG:-local}
+    build: ./backend/sqlserver-sync
+    profiles: ["sqlserver-sync"]
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:-local_demo_password_change_me}@postgres:5432/${POSTGRES_DB:-dinhguide}
+      SQLSERVER_HOST: ${SQLSERVER_HOST:-host.docker.internal}
+      SQLSERVER_PORT: ${SQLSERVER_PORT:-1433}
+      SQLSERVER_DATABASE: ${SQLSERVER_DATABASE:-DinhGuide}
+      SQLSERVER_USER: ${SQLSERVER_USER:-}
+      SQLSERVER_PASSWORD: ${SQLSERVER_PASSWORD:-}
+      SQLSERVER_ENCRYPT: ${SQLSERVER_ENCRYPT:-false}
+      SQLSERVER_TRUST_CERT: ${SQLSERVER_TRUST_CERT:-true}
+      SYNC_INTERVAL_MS: ${SYNC_INTERVAL_MS:-10000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      database-migration:
         condition: service_completed_successfully
     restart: unless-stopped
   api-gateway:
@@ -90,15 +128,15 @@ services:
     environment:
       PORT: 4000
       AUTH_SERVICE_URL: http://auth-service:4101
-      ATTRACTION_SERVICE_URL: http://attraction-service:4102
-      NARRATION_SERVICE_URL: http://narration-service:4103
+      CONTENT_SERVICE_URL: http://content-service:4106
+      NAVIGATION_SERVICE_URL: http://navigation-service:4107
       FEEDBACK_SERVICE_URL: http://feedback-service:4104
       ANALYTICS_SERVICE_URL: http://analytics-service:4105
     depends_on:
       [
         auth-service,
-        attraction-service,
-        narration-service,
+        content-service,
+        navigation-service,
         feedback-service,
         analytics-service,
       ]

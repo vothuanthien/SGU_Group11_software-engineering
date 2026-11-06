@@ -142,70 +142,34 @@ main {
   line-height: 1.7;
 }
 .hero-art {
-  height: 360px;
+  height: 380px;
   background: #e5e9dc;
   border-radius: 180px 180px 8px 8px;
   position: relative;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  box-shadow: 0 12px 30px #26392e16;
 }
-.sun {
-  position: absolute;
-  width: 120px;
-  height: 120px;
-  border-radius: 100%;
-  background: #d6b36d;
-  top: 40px;
-  right: 70px;
-  opacity: 0.8;
-}
-.palace {
-  position: absolute;
-  bottom: 85px;
-  width: 72%;
-  height: 135px;
-  background: #e9dfc4;
-  border: 3px solid #c6b68e;
-  box-shadow: 0 10px 20px #314a3222;
-}
-.roof {
-  position: absolute;
-  left: -5%;
-  top: -24px;
-  width: 110%;
-  height: 25px;
-  background: #b9a67e;
-  clip-path: polygon(3% 0, 97% 0, 100% 100%, 0 100%);
-}
-.columns {
-  display: flex;
-  justify-content: space-evenly;
+.hero-art img {
+  display: block;
+  width: 100%;
   height: 100%;
-  padding: 18px 12px 0;
+  object-fit: cover;
+  object-position: center 48%;
 }
-.columns i {
-  width: 6%;
-  height: 100%;
-  background: #f8f0dc;
-  border: 1px solid #c8b78e;
-}
-.base {
+.hero-art::after {
   position: absolute;
-  bottom: -10px;
-  left: -3%;
-  width: 106%;
-  height: 14px;
-  background: #a9976e;
+  content: "";
+  inset: 35% 0 0;
+  background: linear-gradient(transparent, rgb(17 37 28 / 72%));
 }
-.lawn {
+.hero-art-caption {
   position: absolute;
-  bottom: -70px;
-  width: 120%;
-  height: 150px;
-  border-radius: 50%;
-  background: #829578;
+  z-index: 1;
+  right: 22px;
+  bottom: 20px;
+  left: 22px;
+  color: white;
+  font: 17px "Playfair Display", Georgia, serif;
 }
 .section-head {
   display: flex;
@@ -244,12 +208,44 @@ main {
 .place-card {
   position: relative;
   display: flex;
-  gap: 20px;
+  gap: 18px;
+  align-items: stretch;
   background: #fff;
-  padding: 24px;
+  padding: 12px;
   border: 1px solid #ecebe4;
   border-radius: 8px;
-  min-height: 165px;
+  min-height: 174px;
+  overflow: hidden;
+}
+.place-card-image-link {
+  display: block;
+  flex: 0 0 36%;
+  min-height: 148px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: #e7e9df;
+}
+.place-card-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 148px;
+  object-fit: cover;
+  transition: transform 180ms ease;
+}
+.place-card:hover .place-card-image {
+  transform: scale(1.035);
+}
+.place-card-content {
+  min-width: 0;
+  flex: 1;
+  align-self: center;
+  padding: 8px 10px 8px 0;
+}
+.place-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 .card-number {
   font:
@@ -266,7 +262,7 @@ main {
   font:
     600 21px "Playfair Display",
     serif;
-  margin: 7px 0;
+  margin: 5px 0 0;
 }
 .place-card p:not(.muted) {
   font-size: 12px;
@@ -345,18 +341,169 @@ main {
   overflow: hidden;
   border: 1px solid #e8e7df;
 }
+.attraction-marker,
+.attraction-marker-gold {
+  border: 0;
+  background: transparent;
+}
+.attraction-marker span {
+  position: relative;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 8px;
+  background: #1c4939;
+  box-shadow: 0 3px 8px rgb(25 44 33 / 35%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 750;
+  transform: rotate(-45deg);
+}
+.attraction-marker span b {
+  color: #fff;
+  font-size: 10px;
+  font-weight: 750;
+  font-family: inherit;
+  transform: rotate(45deg);
+}
+.attraction-marker-gold span {
+  background: #bd914b;
+}
 .detail {
-  max-width: 760px;
+  max-width: 1120px;
   margin: 45px auto 80px;
 }
-.back {
-  font-size: 12px;
-  color: #7c877e;
+.detail .back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  min-height: 48px;
+  margin-bottom: 22px;
+  padding: 0 20px;
+  border: 1px solid #1c4939;
+  border-radius: 30px;
+  background: #1c4939;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.detail .back:hover {
+  border-color: #2a614d;
+  background: #2a614d;
+  color: #fff;
+}
+.back-arrow {
+  font-size: 17px;
+  line-height: 1;
 }
 .detail .lead {
   font-size: 17px;
   line-height: 1.7;
   color: #66736a;
+}
+.detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 34px;
+}
+.detail-photo {
+  position: relative;
+  height: 390px;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 9px;
+  background: #e5e5dc;
+}
+.detail-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.detail-photo figcaption {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 34px 17px 15px;
+  color: white;
+  background: linear-gradient(transparent, rgb(18 37 28 / 78%));
+  font: 17px "Playfair Display", Georgia, serif;
+}
+.detail-copy {
+  min-width: 0;
+}
+.detail-gallery {
+  margin-top: 42px;
+}
+.detail-gallery-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.detail-gallery-heading h2 {
+  margin: 0;
+}
+.detail-gallery-heading > span {
+  color: #788279;
+  font-size: 11px;
+}
+.detail-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.detail-gallery-card {
+  overflow: hidden;
+  border: 1px solid #e9e7df;
+  border-radius: 8px;
+  background: #fff;
+  color: #354a3d;
+  text-decoration: none;
+  transition: border-color 150ms ease, transform 150ms ease;
+}
+.detail-gallery-card:hover,
+.detail-gallery-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: #c8a35f;
+}
+.detail-gallery-card.is-current {
+  border-color: #b88e4d;
+  box-shadow: 0 0 0 1px #b88e4d;
+}
+.detail-gallery-card > img,
+.detail-gallery-placeholder {
+  display: block;
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+}
+.detail-gallery-placeholder {
+  display: grid;
+  place-items: center;
+  color: #748077;
+  background: #e9ece4;
+  font-size: 26px;
+}
+.detail-gallery-label {
+  display: block;
+  padding: 9px 10px 11px;
+  font-size: 11px;
+  font-weight: 650;
+}
+.detail-gallery-label small {
+  display: block;
+  margin-top: 4px;
+  color: #788279;
+  font-size: 10px;
+  font-weight: 400;
 }
 .player {
   margin: 28px 0;
@@ -537,6 +684,16 @@ footer {
     height: 280px;
     order: -1;
   }
+  .detail-layout {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .detail-photo {
+    height: 300px;
+  }
+  .detail-gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .hero h1 {
     font-size: 45px;
   }
@@ -572,6 +729,22 @@ footer {
   .place-card {
     padding: 18px;
     gap: 12px;
+  }
+  .place-card-image-link {
+    flex-basis: 34%;
+    min-height: 132px;
+  }
+  .place-card-image {
+    min-height: 132px;
+  }
+  .place-card-content {
+    padding-right: 2px;
+  }
+  .place-card-heading {
+    gap: 9px;
+  }
+  .place-card h3 {
+    font-size: 17px;
   }
   .detail-actions {
     flex-direction: column;

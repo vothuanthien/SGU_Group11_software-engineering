@@ -29,6 +29,7 @@ const words = {
     text: "Nội dung thuyết minh",
     all: "Tất cả điểm tham quan",
     back: "Quay lại",
+    backMap: "Quay lại bản đồ tham quan",
     area: "Khu vực",
     duration: "phút",
     visited: "Đã tham quan",
@@ -70,6 +71,7 @@ const words = {
     text: "Narration text",
     all: "All attractions",
     back: "Back",
+    backMap: "Back to map & attractions",
     area: "Area",
     duration: "min",
     visited: "Visited",
@@ -97,6 +99,24 @@ const words = {
     playTip: "Speech uses voices available in your browser.",
   },
 };
+const attractionImages = {
+  "main-building": { src: "/images/main-building.jpg", alt: "Mặt tiền Tòa nhà chính" },
+  "front-lawn": { src: "/images/front-lawn.jpg", alt: "Thảm cỏ và khuôn viên phía trước Dinh Độc Lập" },
+  "helicopter-pad": { src: "/images/helicopter-pad.jpg", alt: "Sân đáp trực thăng trên sân thượng" },
+  "conference-room": { src: "/images/ceremonial-hall.jpg", alt: "Không gian phòng khánh tiết" },
+  "cabinet-room": { src: "/images/carbinet-room.jpg", alt: "Nội thất phòng nội các" },
+  exhibition: { src: "/images/ceremonial-area.jpg", alt: "Không gian trưng bày tư liệu" },
+  basement: { src: "/images/basement.jpg", alt: "Thiết bị trong khu tầng hầm" },
+  garden: { src: "/images/garden.jpg", alt: "Vườn và khuôn viên Dinh Độc Lập" },
+};
+const numberedMarkerIcon = (number, gold = false) =>
+  L.divIcon({
+    className: `attraction-marker${gold ? " attraction-marker-gold" : ""}`,
+    html: `<span><b>${String(number).padStart(2, "0")}</b></span>`,
+    iconSize: [34, 42],
+    iconAnchor: [17, 40],
+    popupAnchor: [0, -38],
+  });
 function App() {
   const location = useLocation();
   const [lang, setLang] = useState(localStorage.getItem("dinh_lang") || "vi");
@@ -370,7 +390,7 @@ function App() {
                     <p>{t.sub}</p>
                     <div className="hero-actions">
                       <Link className="primary" to="/map">
-                        {t.start} →
+                        {t.start}
                       </Link>
                       <button
                         className="secondary"
@@ -388,17 +408,16 @@ function App() {
                     <p className="small">{t.playTip}</p>
                   </div>
                   <div className="hero-art">
-                    <div className="sun"></div>
-                    <div className="palace">
-                      <div className="roof"></div>
-                      <div className="columns">
-                        {Array.from({ length: 9 }, (_, i) => (
-                          <i key={i} />
-                        ))}
-                      </div>
-                      <div className="base"></div>
-                    </div>
-                    <div className="lawn"></div>
+                    <img
+                      src="/images/main-building.jpg"
+                      alt="Mặt tiền Dinh Độc Lập"
+                      fetchPriority="high"
+                    />
+                    <span className="hero-art-caption">
+                      {lang === "vi"
+                        ? "Tòa nhà chính · Dinh Độc Lập"
+                        : "Main Building · Independence Palace"}
+                    </span>
                   </div>
                 </section>
                 <section className="section-head">
@@ -420,18 +439,37 @@ function App() {
                 <div className="cards">
                   {attractions.map((a, i) => (
                     <article className="place-card" key={a.id}>
-                      <div className="card-number">
-                        {String(i + 1).padStart(2, "0")}
-                      </div>
-                      <div>
-                        <p className="muted">
-                          {lang === "vi" ? a.area_vi : a.area_en}
-                        </p>
-                        <h3>{lang === "vi" ? a.name_vi : a.name_en}</h3>
+                      {attractionImages[a.id] && (
+                        <Link
+                          to={`/place/${encodeURIComponent(a.id)}`}
+                          className="place-card-image-link"
+                          tabIndex={-1}
+                          aria-hidden="true"
+                        >
+                          <img
+                            className="place-card-image"
+                            src={attractionImages[a.id].src}
+                            alt=""
+                            loading="lazy"
+                          />
+                        </Link>
+                      )}
+                      <div className="place-card-content">
+                        <div className="place-card-heading">
+                          <span className="card-number">
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
+                          <div>
+                            <p className="muted">
+                              {lang === "vi" ? a.area_vi : a.area_en}
+                            </p>
+                            <h3>{lang === "vi" ? a.name_vi : a.name_en}</h3>
+                          </div>
+                        </div>
                         <p>
                           {lang === "vi" ? a.description_vi : a.description_en}
                         </p>
-                        <Link to={`/place/${a.id}`} className="text-link">
+                        <Link to={`/place/${encodeURIComponent(a.id)}`} className="text-link">
                           {t.listen} ↗
                         </Link>
                       </div>
@@ -557,6 +595,7 @@ function Detail({
   }, [id, lang]);
   const a = attractions.find((x) => x.id === id);
   if (!a) return <div className="empty">{t.error}</div>;
+  const image = attractionImages[a.id];
   const play = async () => {
     if (n?.audioUrl && audioRef.current) {
       if (playing) {
@@ -581,13 +620,23 @@ function Detail({
   return (
     <section className="detail">
       <Link to="/map" className="back">
-        ← {t.back}
+        <span>{t.backMap}</span>
       </Link>
-      <p className="eyebrow">{lang === "vi" ? a.area_vi : a.area_en}</p>
-      <h1>{lang === "vi" ? a.name_vi : a.name_en}</h1>
-      <p className="lead">
-        {lang === "vi" ? a.description_vi : a.description_en}
-      </p>
+      <div className="detail-layout">
+        {image && (
+          <figure className="detail-photo">
+            <img src={image.src} alt={image.alt} />
+            <figcaption>
+              {lang === "vi" ? a.name_vi : a.name_en} · Dinh Độc Lập
+            </figcaption>
+          </figure>
+        )}
+        <div className="detail-copy">
+          <p className="eyebrow">{lang === "vi" ? a.area_vi : a.area_en}</p>
+          <h1>{lang === "vi" ? a.name_vi : a.name_en}</h1>
+          <p className="lead">
+            {lang === "vi" ? a.description_vi : a.description_en}
+          </p>
       <div className="player">
         <div className="player-icon">♫</div>
         <div className="player-info">
@@ -654,6 +703,39 @@ function Detail({
           </a>
         )}
       </div>
+        </div>
+      </div>
+      <section className="detail-gallery" aria-labelledby="detail-gallery-title">
+        <div className="detail-gallery-heading">
+          <h2 id="detail-gallery-title">
+            {lang === "vi" ? "Địa điểm tham quan" : "Explore attractions"}
+          </h2>
+          <span>{attractions.length} {lang === "vi" ? "điểm" : "places"}</span>
+        </div>
+        <div className="detail-gallery-grid">
+          {attractions.map((place) => {
+            const placeImage = attractionImages[place.id];
+            return (
+              <Link
+                className={`detail-gallery-card${place.id === a.id ? " is-current" : ""}`}
+                to={`/place/${encodeURIComponent(place.id)}`}
+                key={place.id}
+                aria-current={place.id === a.id ? "page" : undefined}
+              >
+                {placeImage ? (
+                  <img src={placeImage.src} alt={placeImage.alt} loading="lazy" />
+                ) : (
+                  <span className="detail-gallery-placeholder" aria-hidden="true">⌖</span>
+                )}
+                <span className="detail-gallery-label">
+                  {lang === "vi" ? place.name_vi : place.name_en}
+                  <small>{lang === "vi" ? place.area_vi : place.area_en}</small>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
     </section>
   );
 }
@@ -679,7 +761,7 @@ function MapPage({ attractions, lang, t, gps, auto, setAuto, setNotice }) {
       <div className="map-layout">
         <div className="map-list">
           {attractions.map((a, i) => (
-            <Link className="map-row" to={`/place/${a.id}`} key={a.id}>
+            <Link className="map-row" to={`/place/${encodeURIComponent(a.id)}`} key={a.id}>
               <b>{String(i + 1).padStart(2, "0")}</b>
               <span>
                 <strong>{lang === "vi" ? a.name_vi : a.name_en}</strong>
@@ -702,12 +784,16 @@ function MapPage({ attractions, lang, t, gps, auto, setAuto, setNotice }) {
             />
             {attractions
               .filter((a) => a.latitude && a.longitude)
-              .map((a) => (
-                <Marker key={a.id} position={[a.latitude, a.longitude]}>
+              .map((a, i) => (
+                <Marker
+                  key={a.id}
+                  position={[a.latitude, a.longitude]}
+                  icon={numberedMarkerIcon(i + 1, i % 2 === 1)}
+                >
                   <Popup>
                     <strong>{lang === "vi" ? a.name_vi : a.name_en}</strong>
                     <br />
-                    <Link to={`/place/${a.id}`}>{t.listen}</Link>
+                    <Link to={`/place/${encodeURIComponent(a.id)}`}>{t.listen}</Link>
                   </Popup>
                 </Marker>
               ))}
@@ -839,7 +925,7 @@ function Admin({ t, lang }) {
     longitude: "",
     sort_order: 1,
     duration_minutes: 2,
-    source_url: "https://independencepalace.gov.vn/",
+    source_url: "https://dinhdoclap.gov.vn",
     image_url: "",
     visible: true,
     narration_published: true,
