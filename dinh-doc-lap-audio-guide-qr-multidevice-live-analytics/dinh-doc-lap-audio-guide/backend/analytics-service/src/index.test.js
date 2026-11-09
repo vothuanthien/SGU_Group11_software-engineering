@@ -1,27 +1,31 @@
 import { describe, expect, it } from "vitest";
-
-const allowedEvents = new Set([
-  "app_opened",
-  "qr_scan",
-  "place_opened",
-  "visit_marked",
-  "narration_started",
-  "narration_completed",
-]);
-const uuidPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { isValidAnalyticsEvent } from "./validation.js";
 
 describe("analytics input rules", () => {
-  it("accepts generated UUID visitor ids", () => {
-    expect(uuidPattern.test("a1c2e3f4-1234-4123-8123-aabbccddeeff")).toBe(true);
+  const event = {
+    visitorId: "a1c2e3f4-1234-4123-8123-aabbccddeeff",
+    eventType: "app_opened",
+    language: "vi",
+  };
+
+  it("accepts a valid anonymous app-open event", () => {
+    expect(isValidAnalyticsEvent(event)).toBe(true);
   });
-  it("rejects invalid visitor identifiers", () => {
-    expect(uuidPattern.test("visitor-123")).toBe(false);
+
+  it("rejects invalid visitor IDs, event types, and languages", () => {
+    expect(isValidAnalyticsEvent({ ...event, visitorId: "visitor-123" })).toBe(false);
+    expect(isValidAnalyticsEvent({ ...event, eventType: "arbitrary" })).toBe(false);
+    expect(isValidAnalyticsEvent({ ...event, language: "fr" })).toBe(false);
   });
-  it("only accepts supported analytics event types", () => {
-    expect(allowedEvents.has("app_opened")).toBe(true);
-    expect(allowedEvents.has("qr_scan")).toBe(true);
-    expect(allowedEvents.has("narration_started")).toBe(true);
-    expect(allowedEvents.has("arbitrary")).toBe(false);
+
+  it("requires an attraction for attraction-specific events", () => {
+    expect(
+      isValidAnalyticsEvent({
+        ...event,
+        eventType: "place_opened",
+        attractionId: "main-building",
+      }),
+    ).toBe(true);
+    expect(isValidAnalyticsEvent({ ...event, eventType: "place_opened" })).toBe(false);
   });
 });

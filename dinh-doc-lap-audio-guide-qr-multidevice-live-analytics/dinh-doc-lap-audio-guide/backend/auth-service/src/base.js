@@ -30,11 +30,21 @@ app.get("/health", async (_req, res) => {
       });
   }
 });
-app.use((err, _req, res, _next) => {
+export function apiErrorHandler(err, _req, res, _next) {
   console.error(err);
-  res
+  if (err instanceof SyntaxError && err.status === 400 && err.type === "entity.parse.failed") {
+    return res
+      .status(400)
+      .json({ error: { code: "INVALID_JSON", message: "Dữ liệu JSON không hợp lệ" } });
+  }
+  if (err.status === 413) {
+    return res
+      .status(413)
+      .json({ error: { code: "PAYLOAD_TOO_LARGE", message: "Dữ liệu gửi lên quá lớn" } });
+  }
+  return res
     .status(500)
     .json({
       error: { code: "INTERNAL_ERROR", message: "Đã xảy ra lỗi máy chủ" },
     });
-});
+}

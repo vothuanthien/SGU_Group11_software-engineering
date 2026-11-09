@@ -1,10 +1,11 @@
-import { app, pool } from "./base.js";
+import { apiErrorHandler, app, pool } from "./base.js";
+import { hasLoginCredentials } from "./validation.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 const secret = process.env.JWT_SECRET || "local_only_change_this_secret";
 app.post("/login", async (req, res) => {
   const { email, password } = req.body || {};
-  if (!email || !password)
+  if (!hasLoginCredentials({ email, password }))
     return res
       .status(400)
       .json({
@@ -36,8 +37,8 @@ app.post("/login", async (req, res) => {
   } catch (e) {
     console.error(e);
     res
-      .status(500)
-      .json({ error: { code: "AUTH_ERROR", message: "Không thể đăng nhập" } });
+      .status(503)
+      .json({ error: { code: "DB_UNAVAILABLE", message: "Không thể đăng nhập lúc này" } });
   }
 });
 app.get("/me", (req, res) => {
@@ -69,6 +70,12 @@ async function seedAdmin() {
     console.error("Admin seed failed", e.message);
   }
 }
+app.use((_req, res) => {
+  res
+    .status(404)
+    .json({ error: { code: "NOT_FOUND", message: "Không tìm thấy API" } });
+});
+app.use(apiErrorHandler);
 seedAdmin().finally(() =>
   app.listen(process.env.PORT || 4101, () => console.log("auth-service ready")),
 );

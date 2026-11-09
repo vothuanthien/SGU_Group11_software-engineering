@@ -1,7 +1,12 @@
-import { app, pool } from "./base.js";
+import { apiErrorHandler, app, pool } from "./base.js";
+import { isSupportedLanguage } from "./validation.js";
 import jwt from "jsonwebtoken";
 const attractionUrl =
   process.env.ATTRACTION_SERVICE_URL || "http://localhost:4102";
+const secret = process.env.JWT_SECRET;
+if (!secret && process.env.NODE_ENV === "production") {
+  throw new Error("JWT_SECRET must be configured in production");
+}
 app.get("/narrations/admin/:id", admin, async (req, res) => {
   try {
     const r = await pool.query(
@@ -32,7 +37,7 @@ app.get("/narrations/admin/:id", admin, async (req, res) => {
 });
 app.get("/narrations/:id/:language", async (req, res) => {
   const { id, language } = req.params;
-  if (!["vi", "en"].includes(language))
+  if (!isSupportedLanguage(language))
     return res
       .status(400)
       .json({
@@ -110,7 +115,7 @@ function admin(req, res, next) {
   try {
     const u = jwt.verify(
       (req.headers.authorization || "").replace(/^Bearer /, ""),
-      process.env.JWT_SECRET || "local_only_change_this_secret",
+      secret || "local_only_change_this_secret",
     );
     if (u.role !== "admin")
       return res
@@ -166,13 +171,19 @@ app.put("/narrations/:id", admin, async (req, res) => {
     res.json({ data: { id: req.params.id, updated: true } });
   } catch {
     res
-      .status(400)
+      .status(503)
       .json({
-        error: { code: "UPDATE_FAILED", message: "Không thể lưu kịch bản" },
+        error: { code: "DB_UNAVAILABLE", message: "Không thể lưu kịch bản" },
       });
   }
 });
 
+app.use((_req, res) => {
+  res
+    .status(404)
+    .json({ error: { code: "NOT_FOUND", message: "Không tìm thấy API" } });
+});
+app.use(apiErrorHandler);
 app.listen(process.env.PORT || 4103, () =>
   console.log("narration-service ready"),
 );

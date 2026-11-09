@@ -59,6 +59,7 @@ services:
     environment:
       PORT: 4103
       DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:-local_demo_password_change_me}@postgres:5432/${POSTGRES_DB:-dinhguide}
+      JWT_SECRET: ${JWT_SECRET:-replace_with_a_long_random_secret_for_local_demo}
       ATTRACTION_SERVICE_URL: http://attraction-service:4102
     depends_on: { postgres: { condition: service_healthy } }
     restart: unless-stopped

@@ -78,5 +78,27 @@ app.post("/navigation/route", async (req, res) => {
   }
 });
 
+app.use((_req, res) => {
+  res
+    .status(404)
+    .json({ error: { code: "NOT_FOUND", message: "Không tìm thấy API" } });
+});
+app.use((err, _req, res, _next) => {
+  console.error(err);
+  if (err instanceof SyntaxError && err.status === 400 && err.type === "entity.parse.failed") {
+    return res
+      .status(400)
+      .json({ error: { code: "INVALID_JSON", message: "Dữ liệu JSON không hợp lệ" } });
+  }
+  if (err.status === 413) {
+    return res
+      .status(413)
+      .json({ error: { code: "PAYLOAD_TOO_LARGE", message: "Dữ liệu gửi lên quá lớn" } });
+  }
+  return res
+    .status(500)
+    .json({ error: { code: "INTERNAL_ERROR", message: "Đã xảy ra lỗi máy chủ" } });
+});
+
 const port = Number(process.env.PORT) || 4107;
 app.listen(port, () => console.log(`navigation-service ready on ${port}`));

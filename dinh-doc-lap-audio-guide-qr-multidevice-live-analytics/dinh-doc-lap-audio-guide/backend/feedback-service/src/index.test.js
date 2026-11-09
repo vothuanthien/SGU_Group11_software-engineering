@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
+import { isValidFeedback } from "./validation.js";
+
 describe("feedback validation", () => {
-  it("rating range is 1 to 5", () =>
-    expect([1, 2, 3, 4, 5].every((n) => n >= 1 && n <= 5)).toBe(true));
+  it("validates rating, message, and feedback type", () => {
+    expect(isValidFeedback({ rating: 5, message: "Useful" })).toBe(true);
+    expect(isValidFeedback({ rating: 0, message: "Useful" })).toBe(false);
+    expect(isValidFeedback({ rating: 5, message: "   " })).toBe(false);
+    expect(isValidFeedback({ rating: 5, message: "Useful", type: "other" })).toBe(false);
+  });
 });

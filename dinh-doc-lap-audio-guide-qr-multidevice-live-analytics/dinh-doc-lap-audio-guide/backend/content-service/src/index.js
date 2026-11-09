@@ -77,6 +77,11 @@ for (const route of CONTENT_ROUTES) {
 app.get("/", (_req, res) => {
   res.json({ service: "content-service", status: "ready" });
 });
+app.use((_req, res) => {
+  res
+    .status(404)
+    .json({ error: { code: "NOT_FOUND", message: "Không tìm thấy API" } });
+});
 
 const port = Number(process.env.PORT) || 4106;
 app.listen(port, () => console.log(`content-service ready on ${port}`));

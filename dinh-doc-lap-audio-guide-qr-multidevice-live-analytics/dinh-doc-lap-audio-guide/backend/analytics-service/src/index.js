@@ -1,17 +1,7 @@
 import jwt from "jsonwebtoken";
-import { app, pool } from "./base.js";
+import { apiErrorHandler, app, pool } from "./base.js";
+import { isValidAnalyticsEvent } from "./validation.js";
 
-const allowedEvents = new Set([
-  "app_opened",
-  "qr_scan",
-  "place_opened",
-  "visit_marked",
-  "narration_started",
-  "narration_completed",
-]);
-const allowedLanguages = new Set(["vi", "en"]);
-const uuidPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const secret = process.env.JWT_SECRET || "local_only_change_this_secret";
 
 function admin(req, res, next) {
@@ -37,17 +27,7 @@ function admin(req, res, next) {
 app.post("/analytics/events", async (req, res) => {
   const body = req.body || {};
   const { visitorId, eventType, attractionId, language, metadata } = body;
-  const needsAttraction = eventType !== "app_opened";
-  const validAttractionId =
-    typeof attractionId === "string" &&
-    /^[a-zA-Z0-9_-]{1,100}$/.test(attractionId);
-  if (
-    !uuidPattern.test(String(visitorId || "")) ||
-    !allowedEvents.has(eventType) ||
-    !allowedLanguages.has(language) ||
-    (needsAttraction && !validAttractionId) ||
-    (!needsAttraction && attractionId != null && !validAttractionId)
-  ) {
+  if (!isValidAnalyticsEvent(body)) {
     return res
       .status(400)
       .json({
@@ -213,6 +193,12 @@ app.get("/analytics/summary", admin, async (req, res) => {
   }
 });
 
+app.use((_req, res) => {
+  res
+    .status(404)
+    .json({ error: { code: "NOT_FOUND", message: "Không tìm thấy API" } });
+});
+app.use(apiErrorHandler);
 app.listen(process.env.PORT || 4105, () =>
   console.log("analytics-service ready"),
 );
