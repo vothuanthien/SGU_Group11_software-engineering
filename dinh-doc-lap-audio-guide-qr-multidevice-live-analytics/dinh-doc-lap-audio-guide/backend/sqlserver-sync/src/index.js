@@ -16,9 +16,9 @@ const sqlPool = await sql.connect({
   user: process.env.SQLSERVER_USER,
   password: process.env.SQLSERVER_PASSWORD,
   options: {
-    encrypt: String(process.env.SQLSERVER_ENCRYPT || "false").toLowerCase() === "true",
+    encrypt: String(process.env.SQLSERVER_ENCRYPT || "true").toLowerCase() === "true",
     trustServerCertificate:
-      String(process.env.SQLSERVER_TRUST_CERT || "true").toLowerCase() === "true",
+      String(process.env.SQLSERVER_TRUST_CERT || "false").toLowerCase() === "true",
   },
   pool: { min: 0, max: 5, idleTimeoutMillis: 30000 },
   connectionTimeout: 10000,

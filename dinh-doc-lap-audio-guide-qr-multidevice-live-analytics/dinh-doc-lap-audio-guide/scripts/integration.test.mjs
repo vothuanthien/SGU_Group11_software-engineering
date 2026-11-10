@@ -3,8 +3,11 @@ import test from "node:test";
 
 const apiBase =
   process.env.API_BASE_URL ?? "http://127.0.0.1:4000/api/v1";
-const adminEmail = process.env.TEST_ADMIN_EMAIL ?? "admin@dinhguide.local";
-const adminPassword = process.env.TEST_ADMIN_PASSWORD ?? "Admin123!";
+const adminEmail = process.env.TEST_ADMIN_EMAIL;
+const adminPassword = process.env.TEST_ADMIN_PASSWORD;
+if (!adminEmail || !adminPassword) {
+  throw new Error("TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD must be configured");
+}
 
 async function request(path, { method = "GET", body, rawBody, token } = {}) {
   const headers = {};

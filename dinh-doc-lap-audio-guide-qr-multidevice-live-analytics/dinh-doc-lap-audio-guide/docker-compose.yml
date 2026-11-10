@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-dinhguide}
       POSTGRES_USER: ${POSTGRES_USER:-dinhguide}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local_demo_password_change_me}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
@@ -21,7 +21,7 @@ services:
       PGPORT: 5432
       PGDATABASE: ${POSTGRES_DB:-dinhguide}
       PGUSER: ${POSTGRES_USER:-dinhguide}
-      PGPASSWORD: ${POSTGRES_PASSWORD:-local_demo_password_change_me}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?required}
     volumes:
       - ./database/migrations/001_narration_publication.sql:/migrations/001_narration_publication.sql:ro
       - ./database/migrations/002_visitor_analytics.sql:/migrations/002_visitor_analytics.sql:ro
@@ -40,8 +40,10 @@ services:
     build: ./backend/auth-service
     environment:
       PORT: 4101
-      DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:-local_demo_password_change_me}@postgres:5432/${POSTGRES_DB:-dinhguide}
-      JWT_SECRET: ${JWT_SECRET:-replace_with_a_long_random_secret_for_local_demo}
+      DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:?required}@postgres:5432/${POSTGRES_DB:-dinhguide}
+      JWT_SECRET: ${JWT_SECRET:?required}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     depends_on: { postgres: { condition: service_healthy } }
     restart: unless-stopped
   attraction-service:
@@ -49,8 +51,8 @@ services:
     build: ./backend/attraction-service
     environment:
       PORT: 4102
-      JWT_SECRET: ${JWT_SECRET:-replace_with_a_long_random_secret_for_local_demo}
-      DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:-local_demo_password_change_me}@postgres:5432/${POSTGRES_DB:-dinhguide}
+      JWT_SECRET: ${JWT_SECRET:?required}
+      DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:?required}@postgres:5432/${POSTGRES_DB:-dinhguide}
     depends_on: { postgres: { condition: service_healthy } }
     restart: unless-stopped
   narration-service:
@@ -58,8 +60,8 @@ services:
     build: ./backend/narration-service
     environment:
       PORT: 4103
-      DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:-local_demo_password_change_me}@postgres:5432/${POSTGRES_DB:-dinhguide}
-      JWT_SECRET: ${JWT_SECRET:-replace_with_a_long_random_secret_for_local_demo}
+      DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:?required}@postgres:5432/${POSTGRES_DB:-dinhguide}
+      JWT_SECRET: ${JWT_SECRET:?required}
       ATTRACTION_SERVICE_URL: http://attraction-service:4102
     depends_on: { postgres: { condition: service_healthy } }
     restart: unless-stopped
@@ -85,9 +87,9 @@ services:
     build: ./backend/feedback-service
     environment:
       PORT: 4104
-      DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:-local_demo_password_change_me}@postgres:5432/${POSTGRES_DB:-dinhguide}
+      DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:?required}@postgres:5432/${POSTGRES_DB:-dinhguide}
       ATTRACTION_SERVICE_URL: http://attraction-service:4102
-      JWT_SECRET: ${JWT_SECRET:-replace_with_a_long_random_secret_for_local_demo}
+      JWT_SECRET: ${JWT_SECRET:?required}
     depends_on: { postgres: { condition: service_healthy } }
     restart: unless-stopped
   analytics-service:
@@ -95,8 +97,8 @@ services:
     build: ./backend/analytics-service
     environment:
       PORT: 4105
-      DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:-local_demo_password_change_me}@postgres:5432/${POSTGRES_DB:-dinhguide}
-      JWT_SECRET: ${JWT_SECRET:-replace_with_a_long_random_secret_for_local_demo}
+      DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:?required}@postgres:5432/${POSTGRES_DB:-dinhguide}
+      JWT_SECRET: ${JWT_SECRET:?required}
     depends_on:
       postgres:
         condition: service_healthy
@@ -108,14 +110,14 @@ services:
     build: ./backend/sqlserver-sync
     profiles: ["sqlserver-sync"]
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:-local_demo_password_change_me}@postgres:5432/${POSTGRES_DB:-dinhguide}
+      DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:?required}@postgres:5432/${POSTGRES_DB:-dinhguide}
       SQLSERVER_HOST: ${SQLSERVER_HOST:-host.docker.internal}
       SQLSERVER_PORT: ${SQLSERVER_PORT:-1433}
       SQLSERVER_DATABASE: ${SQLSERVER_DATABASE:-DinhGuide}
       SQLSERVER_USER: ${SQLSERVER_USER:-}
       SQLSERVER_PASSWORD: ${SQLSERVER_PASSWORD:-}
-      SQLSERVER_ENCRYPT: ${SQLSERVER_ENCRYPT:-false}
-      SQLSERVER_TRUST_CERT: ${SQLSERVER_TRUST_CERT:-true}
+      SQLSERVER_ENCRYPT: ${SQLSERVER_ENCRYPT:-true}
+      SQLSERVER_TRUST_CERT: ${SQLSERVER_TRUST_CERT:-false}
       SYNC_INTERVAL_MS: ${SYNC_INTERVAL_MS:-10000}
     depends_on:
       postgres:

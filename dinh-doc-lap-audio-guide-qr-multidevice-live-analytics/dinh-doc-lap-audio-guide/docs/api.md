@@ -28,8 +28,10 @@ Base URL local: `http://localhost:4000/api/v1` (hoặc qua frontend `/api/v1`).
 Ví dụ đăng nhập:
 
 ```json
-{ "email": "admin@dinhguide.local", "password": "Admin123!" }
+{ "email": "<ADMIN_EMAIL>", "password": "<ADMIN_PASSWORD>" }
 ```
+
+Set these values in the ignored `.env` file before starting the services. The admin account is created only when both values are configured.
 
 Response thành công có dạng `{"data":{"token":"...","user":{"id":"...","email":"...","role":"admin"}}}`. Lỗi nghiệp vụ có dạng `{"error":{"code":"...","message":"..."}}`. Validation trả 400, xác thực 401, phân quyền 403, không tìm thấy 404 và lỗi phụ thuộc/cơ sở dữ liệu 503. JSON sai định dạng trả 400 `INVALID_JSON`; payload vượt giới hạn trả 413 `PAYLOAD_TOO_LARGE`; route API không tồn tại trả 404. Gateway trả 502 `UPSTREAM_UNAVAILABLE` khi service phía sau không truy cập được. Endpoint health giữ response `status`/`dependencies` riêng để biểu diễn trạng thái vận hành.
 

@@ -42,6 +42,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Configure ephemeral Compose build credentials
+        shell: bash
+        run: |
+          echo "POSTGRES_PASSWORD=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
       - run: docker compose build
         working-directory: dinh-doc-lap-audio-guide-qr-multidevice-live-analytics/dinh-doc-lap-audio-guide
   integration:
@@ -49,13 +54,21 @@ jobs:
     env:
       COMPOSE_PROJECT_NAME: dinh-guide-integration-${{ github.run_id }}-${{ github.run_attempt }}
       API_BASE_URL: http://127.0.0.1:4000/api/v1
-      TEST_ADMIN_EMAIL: admin@dinhguide.local
-      TEST_ADMIN_PASSWORD: Admin123!
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Configure ephemeral integration credentials
+        shell: bash
+        run: |
+          admin_password="$(openssl rand -hex 24)"
+          echo "POSTGRES_PASSWORD=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "ADMIN_EMAIL=integration-admin@example.invalid" >> "$GITHUB_ENV"
+          echo "ADMIN_PASSWORD=$admin_password" >> "$GITHUB_ENV"
+          echo "TEST_ADMIN_EMAIL=integration-admin@example.invalid" >> "$GITHUB_ENV"
+          echo "TEST_ADMIN_PASSWORD=$admin_password" >> "$GITHUB_ENV"
       - name: Start isolated Docker Compose stack
         run: docker compose up --build --detach
         working-directory: dinh-doc-lap-audio-guide-qr-multidevice-live-analytics/dinh-doc-lap-audio-guide

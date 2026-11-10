@@ -5,12 +5,12 @@ MVP chạy bằng Docker Compose: React/Vite, API Gateway, 5 backend service ngh
 ## Chạy local
 
 1. Cài Docker Desktop và mở Docker.
-2. Sao chép `.env.example` thành `.env` (cấu hình mặc định chỉ dành cho demo local).
+2. Sao chép `.env.example` thành `.env`; đặt `POSTGRES_PASSWORD` và `JWT_SECRET` thành giá trị ngẫu nhiên riêng (JWT tối thiểu 32 ký tự; mật khẩu DB nên dùng ký tự URL-safe). Đặt `ADMIN_EMAIL` và `ADMIN_PASSWORD` (tối thiểu 12 ký tự) để tạo tài khoản quản trị ban đầu; nếu bỏ trống thì không tạo admin.
 3. Chạy `docker compose up --build` tại thư mục dự án.
 4. Mở frontend tại http://localhost:8080; API health tại http://localhost:8080/api/v1/health.
-5. Tài khoản admin demo: `admin@dinhguide.local` / `Admin123!`.
-
 Compose tự khởi tạo schema và dữ liệu mẫu khi PostgreSQL tạo volume lần đầu; dịch vụ `analytics-migration` áp dụng migration để hỗ trợ cả volume cũ. Khi cập nhật ZIP có thay đổi migration, chạy `docker compose up --build --force-recreate -d` để chắc chắn container migration chạy lại; lệnh này không xóa volume dữ liệu. Nếu cần reset toàn bộ dữ liệu demo: `docker compose down -v` rồi `docker compose up --build`.
+
+Nếu đã chạy phiên bản cũ, volume PostgreSQL hiện hữu có thể vẫn chứa tài khoản demo được tạo trước đây; hãy đổi hoặc xóa tài khoản đó sau khi sao lưu DB. Thay đổi này không tự sửa thông tin đăng nhập trong volume cũ.
 
 ## Sử dụng QR và dashboard thống kê
 
@@ -34,7 +34,7 @@ Compose tự khởi tạo schema và dữ liệu mẫu khi PostgreSQL tạo volu
 ## API chính
 
 - `GET /api/v1/health`
-- `POST /api/v1/auth/login` `{ "email":"admin@dinhguide.local", "password":"Admin123!" }`
+- `POST /api/v1/auth/login` `{ "email":"<ADMIN_EMAIL>", "password":"<ADMIN_PASSWORD>" }` (giá trị cấu hình trong `.env`)
 - `GET /api/v1/attractions`, `GET /api/v1/attractions/:id`, `GET /api/v1/tours`
 - `GET /api/v1/narrations/:attractionId/:language` (`vi` hoặc `en`)
 - `POST /api/v1/analytics/events` ghi sự kiện tham quan/thuyết minh không chứa danh tính thật.
@@ -55,7 +55,7 @@ Mỗi service có `npm test`; trong thư mục service chạy `npm install` trư
 
 - `.github/workflows/ci.yml`: cài dependencies, chạy test/build và build image.
 - `.github/workflows/cd.yml`: với tag `v*`, chạy verify lint/test/build trước; chỉ sau khi verify thành công mới build/push image lên GHCR và tùy chọn SSH deploy nếu khai báo secrets `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_PATH`. Khi deploy, đặt `IMAGE_OWNER` bằng owner/repository namespace trên GHCR và `IMAGE_TAG` bằng tag phát hành trong môi trường remote.
-- Không có máy chủ/Secrets thì CD không thực hiện deploy; chạy local vẫn hoạt động. Đừng dùng mật khẩu demo ở production.
+- Không có máy chủ/Secrets thì CD không thực hiện deploy; chạy local vẫn hoạt động. Không dùng chung mật khẩu hoặc JWT secret giữa các môi trường.
 
 ## Giới hạn MVP cần biết
 

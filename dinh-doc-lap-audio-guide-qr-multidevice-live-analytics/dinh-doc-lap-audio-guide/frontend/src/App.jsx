@@ -896,7 +896,7 @@ function Feedback({ attractions, lang, t }) {
 }
 function Admin({ t, lang }) {
   const isVi = lang === "vi";
-  const [email, setEmail] = useState("admin@dinhguide.local"),
+  const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
     [user, setUser] = useState(() => {
       try {
@@ -1131,7 +1131,6 @@ function Admin({ t, lang }) {
             />
           </label>
           <button className="primary">{t.login} →</button>
-          <p className="small">Demo: admin@dinhguide.local / Admin123!</p>
           {error && (
             <p className="error" role="alert">
               {error}

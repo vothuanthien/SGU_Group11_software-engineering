@@ -2,7 +2,10 @@ import { apiErrorHandler, app, pool } from "./base.js";
 import { hasLoginCredentials } from "./validation.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-const secret = process.env.JWT_SECRET || "local_only_change_this_secret";
+const secret = process.env.JWT_SECRET;
+if (!secret || secret.length < 32) {
+  throw new Error("JWT_SECRET must be configured with at least 32 characters");
+}
 app.post("/login", async (req, res) => {
   const { email, password } = req.body || {};
   if (!hasLoginCredentials({ email, password }))
@@ -53,18 +56,28 @@ app.get("/me", (req, res) => {
       .json({ error: { code: "UNAUTHORIZED", message: "Token không hợp lệ" } });
   }
 });
+const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+const adminPassword = process.env.ADMIN_PASSWORD;
+if (Boolean(adminEmail) !== Boolean(adminPassword)) {
+  throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD must be configured together");
+}
+if (adminPassword && adminPassword.length < 12) {
+  throw new Error("ADMIN_PASSWORD must contain at least 12 characters");
+}
+
 async function seedAdmin() {
+  if (!adminEmail || !adminPassword) return;
   try {
     const r = await pool.query("SELECT id FROM users WHERE email=$1", [
-      "admin@dinhguide.local",
+      adminEmail,
     ]);
     if (!r.rowCount) {
-      const hash = await bcrypt.hash("Admin123!", 10);
+      const hash = await bcrypt.hash(adminPassword, 10);
       await pool.query(
         "INSERT INTO users(email,password_hash,role) VALUES($1,$2,$3)",
-        ["admin@dinhguide.local", hash, "admin"],
+        [adminEmail, hash, "admin"],
       );
-      console.log("Created local demo admin account");
+      console.log("Created configured admin account");
     }
   } catch (e) {
     console.error("Admin seed failed", e.message);

@@ -4,8 +4,8 @@ import jwt from "jsonwebtoken";
 const attractionUrl =
   process.env.ATTRACTION_SERVICE_URL || "http://localhost:4102";
 const secret = process.env.JWT_SECRET;
-if (!secret && process.env.NODE_ENV === "production") {
-  throw new Error("JWT_SECRET must be configured in production");
+if (!secret || secret.length < 32) {
+  throw new Error("JWT_SECRET must be configured with at least 32 characters");
 }
 app.get("/narrations/admin/:id", admin, async (req, res) => {
   try {
@@ -115,7 +115,7 @@ function admin(req, res, next) {
   try {
     const u = jwt.verify(
       (req.headers.authorization || "").replace(/^Bearer /, ""),
-      secret || "local_only_change_this_secret",
+      secret,
     );
     if (u.role !== "admin")
       return res
