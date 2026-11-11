@@ -44,6 +44,12 @@ services:
       JWT_SECRET: ${JWT_SECRET:?required}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4101/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     depends_on: { postgres: { condition: service_healthy } }
     restart: unless-stopped
   attraction-service:
@@ -53,6 +59,12 @@ services:
       PORT: 4102
       JWT_SECRET: ${JWT_SECRET:?required}
       DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:?required}@postgres:5432/${POSTGRES_DB:-dinhguide}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4102/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     depends_on: { postgres: { condition: service_healthy } }
     restart: unless-stopped
   narration-service:
@@ -63,6 +75,12 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:?required}@postgres:5432/${POSTGRES_DB:-dinhguide}
       JWT_SECRET: ${JWT_SECRET:?required}
       ATTRACTION_SERVICE_URL: http://attraction-service:4102
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4103/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     depends_on: { postgres: { condition: service_healthy } }
     restart: unless-stopped
   content-service:
@@ -72,7 +90,17 @@ services:
       PORT: 4106
       ATTRACTION_SERVICE_URL: http://attraction-service:4102
       NARRATION_SERVICE_URL: http://narration-service:4103
-    depends_on: [attraction-service, narration-service]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4106/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    depends_on:
+      attraction-service:
+        condition: service_healthy
+      narration-service:
+        condition: service_healthy
     restart: unless-stopped
   navigation-service:
     image: ghcr.io/${IMAGE_OWNER:-local}/dinh-guide-navigation-service:${IMAGE_TAG:-local}
@@ -80,7 +108,15 @@ services:
     environment:
       PORT: 4107
       ATTRACTION_SERVICE_URL: http://attraction-service:4102
-    depends_on: [attraction-service]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4107/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    depends_on:
+      attraction-service:
+        condition: service_healthy
     restart: unless-stopped
   feedback-service:
     image: ghcr.io/${IMAGE_OWNER:-local}/dinh-guide-feedback-service:${IMAGE_TAG:-local}
@@ -90,6 +126,12 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:?required}@postgres:5432/${POSTGRES_DB:-dinhguide}
       ATTRACTION_SERVICE_URL: http://attraction-service:4102
       JWT_SECRET: ${JWT_SECRET:?required}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4104/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     depends_on: { postgres: { condition: service_healthy } }
     restart: unless-stopped
   analytics-service:
@@ -99,6 +141,12 @@ services:
       PORT: 4105
       DATABASE_URL: postgres://${POSTGRES_USER:-dinhguide}:${POSTGRES_PASSWORD:?required}@postgres:5432/${POSTGRES_DB:-dinhguide}
       JWT_SECRET: ${JWT_SECRET:?required}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4105/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     depends_on:
       postgres:
         condition: service_healthy
@@ -135,21 +183,38 @@ services:
       NAVIGATION_SERVICE_URL: http://navigation-service:4107
       FEEDBACK_SERVICE_URL: http://feedback-service:4104
       ANALYTICS_SERVICE_URL: http://analytics-service:4105
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/api/v1/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     depends_on:
-      [
-        auth-service,
-        content-service,
-        navigation-service,
-        feedback-service,
-        analytics-service,
-      ]
+      auth-service:
+        condition: service_healthy
+      content-service:
+        condition: service_healthy
+      navigation-service:
+        condition: service_healthy
+      feedback-service:
+        condition: service_healthy
+      analytics-service:
+        condition: service_healthy
     ports: ["${GATEWAY_PORT:-4000}:4000"]
     restart: unless-stopped
   frontend:
     image: ghcr.io/${IMAGE_OWNER:-local}/dinh-guide-frontend:${IMAGE_TAG:-local}
     build: ./frontend
     ports: ["${FRONTEND_PORT:-8080}:80"]
-    depends_on: [api-gateway]
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    depends_on:
+      api-gateway:
+        condition: service_healthy
     restart: unless-stopped
 volumes:
   pgdata:

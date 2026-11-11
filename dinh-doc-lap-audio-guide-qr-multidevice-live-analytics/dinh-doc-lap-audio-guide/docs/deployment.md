@@ -3,6 +3,20 @@
 Local: `cp .env.example .env && docker compose up --build`.
 Production: dùng secret ngẫu nhiên riêng cho `JWT_SECRET` (tối thiểu 32 ký tự), `POSTGRES_PASSWORD` và tài khoản admin; không dùng lại giá trị demo hoặc secret giữa các môi trường. Cấu hình SQL Server sync với mã hóa TLS bật và chỉ tin cậy chứng chỉ hợp lệ. Thiết lập GitHub Secrets, cấu hình domain/TLS, database backup, firewall và giám sát. CD workflow chỉ chạy với tag `v*`, build/push GHCR; bước SSH chỉ chạy nếu đủ `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_PATH`. Trên server phải cài Docker Compose, đăng nhập GHCR nếu image private và tạo `.env` bảo mật. Sau deploy kiểm tra `/api/v1/health`. Khi lỗi, xem `docker compose logs --tail=200 <service>`, rollback về tag image trước đó và kiểm tra DB migration/backup.
 
+## PostgreSQL backup and restore test
+
+Create and verify a custom-format backup without stopping the application:
+
+```powershell
+.\scripts\backup-postgres.ps1
+```
+
+The dump is written under the ignored `backups/` directory. Test that it can actually be restored into an isolated temporary database; the script refuses to target the application database and removes the temporary database afterward:
+
+```powershell
+.\scripts\test-postgres-restore.ps1 -BackupFile .\backups\dinhguide-YYYYMMDD-HHMMSS.dump
+```
+
 ## Database migrations and QR rollout
 
 `docker compose up --build` also runs the one-shot `database-migration` container after PostgreSQL becomes healthy. It applies `001_narration_publication.sql` and `002_visitor_analytics.sql` idempotently so existing named volumes gain the required columns and analytics table without dropping data. If a migration fails, inspect `docker compose logs database-migration` before retrying.

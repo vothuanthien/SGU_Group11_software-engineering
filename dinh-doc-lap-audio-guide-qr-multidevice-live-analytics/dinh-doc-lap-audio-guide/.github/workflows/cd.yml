@@ -2,6 +2,8 @@ name: CD
 on:
   push:
     tags: ["v*"]
+env:
+  PROJECT_DIR: dinh-doc-lap-audio-guide-qr-multidevice-live-analytics/dinh-doc-lap-audio-guide
 permissions:
   contents: read
   packages: write
@@ -15,29 +17,31 @@ jobs:
           [
             frontend,
             backend/api-gateway,
+            backend/content-service,
             backend/auth-service,
             backend/attraction-service,
             backend/narration-service,
             backend/feedback-service,
             backend/analytics-service,
+            backend/navigation-service,
           ]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
-        working-directory: ${{ matrix.package }}
+      - run: npm ci
+        working-directory: ${{ env.PROJECT_DIR }}/${{ matrix.package }}
       - run: npm run lint
-        working-directory: ${{ matrix.package }}
+        working-directory: ${{ env.PROJECT_DIR }}/${{ matrix.package }}
       - run: npm test
-        working-directory: ${{ matrix.package }}
+        working-directory: ${{ env.PROJECT_DIR }}/${{ matrix.package }}
       - if: matrix.package == 'frontend'
         run: npm run build
-        working-directory: ${{ matrix.package }}
+        working-directory: ${{ env.PROJECT_DIR }}/${{ matrix.package }}
       - if: matrix.package != 'frontend'
         run: node --check src/index.js
-        working-directory: ${{ matrix.package }}
+        working-directory: ${{ env.PROJECT_DIR }}/${{ matrix.package }}
   publish:
     needs: verify
     runs-on: ubuntu-latest
@@ -52,7 +56,7 @@ jobs:
       - name: Build and push frontend
         uses: docker/build-push-action@v6
         with:
-          context: ./frontend
+          context: ./${{ env.PROJECT_DIR }}/frontend
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/dinh-guide-frontend:${{ github.ref_name }}
       - name: Build and push services
@@ -60,8 +64,8 @@ jobs:
           IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/dinh-guide
           TAG: ${{ github.ref_name }}
         run: |
-          for service in api-gateway auth-service attraction-service narration-service feedback-service analytics-service; do
-            docker build -t "$IMAGE_PREFIX-$service:$TAG" "backend/$service"
+          for service in api-gateway content-service auth-service attraction-service narration-service feedback-service analytics-service navigation-service sqlserver-sync; do
+            docker build -t "$IMAGE_PREFIX-$service:$TAG" "$PROJECT_DIR/backend/$service"
             docker push "$IMAGE_PREFIX-$service:$TAG"
           done
       - name: Check whether SSH deployment is configured

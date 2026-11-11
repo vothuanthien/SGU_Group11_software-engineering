@@ -26,7 +26,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
+      - run: npm ci
         working-directory: dinh-doc-lap-audio-guide-qr-multidevice-live-analytics/dinh-doc-lap-audio-guide/${{ matrix.package }}
       - run: npm run lint
         working-directory: dinh-doc-lap-audio-guide-qr-multidevice-live-analytics/dinh-doc-lap-audio-guide/${{ matrix.package }}
@@ -45,8 +45,10 @@ jobs:
       - name: Configure ephemeral Compose build credentials
         shell: bash
         run: |
-          echo "POSTGRES_PASSWORD=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
-          echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          {
+            echo "POSTGRES_PASSWORD=$(openssl rand -hex 32)"
+            echo "JWT_SECRET=$(openssl rand -hex 32)"
+          } >> "$GITHUB_ENV"
       - run: docker compose build
         working-directory: dinh-doc-lap-audio-guide-qr-multidevice-live-analytics/dinh-doc-lap-audio-guide
   integration:
@@ -63,12 +65,14 @@ jobs:
         shell: bash
         run: |
           admin_password="$(openssl rand -hex 24)"
-          echo "POSTGRES_PASSWORD=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
-          echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
-          echo "ADMIN_EMAIL=integration-admin@example.invalid" >> "$GITHUB_ENV"
-          echo "ADMIN_PASSWORD=$admin_password" >> "$GITHUB_ENV"
-          echo "TEST_ADMIN_EMAIL=integration-admin@example.invalid" >> "$GITHUB_ENV"
-          echo "TEST_ADMIN_PASSWORD=$admin_password" >> "$GITHUB_ENV"
+          {
+            echo "POSTGRES_PASSWORD=$(openssl rand -hex 32)"
+            echo "JWT_SECRET=$(openssl rand -hex 32)"
+            echo "ADMIN_EMAIL=integration-admin@example.invalid"
+            echo "ADMIN_PASSWORD=$admin_password"
+            echo "TEST_ADMIN_EMAIL=integration-admin@example.invalid"
+            echo "TEST_ADMIN_PASSWORD=$admin_password"
+          } >> "$GITHUB_ENV"
       - name: Start isolated Docker Compose stack
         run: docker compose up --build --detach
         working-directory: dinh-doc-lap-audio-guide-qr-multidevice-live-analytics/dinh-doc-lap-audio-guide
