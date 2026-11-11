@@ -12,8 +12,8 @@
 Lệnh `--force-recreate` thay thế container nhưng vẫn giữ named volume database; không thêm `-v` vào lệnh `docker compose down`.
 
 2. Trên máy tính chạy Windows, mở CMD và chạy `ipconfig`. Tìm `IPv4 Address` của card Wi-Fi/Ethernet đang dùng, ví dụ `192.168.1.20`. Không dùng địa chỉ `127.0.0.1`, `localhost`, `0.0.0.0` hoặc địa chỉ của adapter không nối mạng.
-3. Dùng máy tính mở `http://localhost:8080`, đăng nhập quản trị, mở tab **Mã QR**. Nhập `http://192.168.1.20:8080` bằng địa chỉ IPv4 thật của máy tính, chọn địa điểm và tải/in mã.
-4. Kết nối điện thoại và máy tính vào cùng Wi-Fi. Quét QR bằng camera mặc định của điện thoại rồi bấm mở liên kết. Điện thoại sẽ mở route `/place/<id>?source=qr` trong cùng ứng dụng. Không cần cài app và không cần tài khoản khách.
+3. Dùng máy tính mở `http://localhost:8080`, đăng nhập quản trị, mở tab **Mã QR**. Nhập `http://192.168.1.20:8080` bằng địa chỉ IPv4 thật của máy tính, chọn **Trang chủ** để tạo mã về trang chính hoặc chọn **Trang địa điểm** và một địa điểm cụ thể, rồi tải/in mã.
+4. Kết nối điện thoại và máy tính vào cùng Wi-Fi. Quét QR bằng camera mặc định của điện thoại rồi bấm mở liên kết. Mã **Trang chủ** mở `/?source=qr`; mã **Trang địa điểm** mở `/place/<id>?source=qr`. Không cần cài app và không cần tài khoản khách.
 5. Bấm **Nghe thuyết minh**. Trình duyệt di động sẽ đọc nội dung bằng Web Speech API (giọng đọc tùy thiết bị); nếu có audio URL đã công bố thì trình phát ưu tiên tệp audio. Bấm đánh dấu tham quan nếu muốn ghi nhận sự kiện đó.
 6. Mở dashboard quản trị ở máy tính. Dữ liệu được làm mới mỗi 5 giây; các số liệu được truy vấn từ bảng PostgreSQL `visitor_events`. Quét cùng mã bằng nhiều điện thoại tạo các sự kiện riêng cho UUID ẩn danh của từng trình duyệt.
 

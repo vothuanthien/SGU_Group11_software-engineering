@@ -1,8 +1,12 @@
-import { app, pool } from "./base.js";
+import { apiErrorHandler, app, pool } from "./base.js";
+import { isValidFeedback } from "./validation.js";
 import jwt from "jsonwebtoken";
 const attractionUrl =
   process.env.ATTRACTION_SERVICE_URL || "http://localhost:4102";
-const secret = process.env.JWT_SECRET || "local_only_change_this_secret";
+const secret = process.env.JWT_SECRET;
+if (!secret || secret.length < 32) {
+  throw new Error("JWT_SECRET must be configured with at least 32 characters");
+}
 function admin(req, res, next) {
   try {
     const u = jwt.verify(
@@ -24,15 +28,7 @@ function admin(req, res, next) {
 }
 app.post("/feedback", async (req, res) => {
   const b = req.body || {};
-  if (
-    !Number.isInteger(b.rating) ||
-    b.rating < 1 ||
-    b.rating > 5 ||
-    typeof b.message !== "string" ||
-    !b.message.trim() ||
-    b.message.length > 1000 ||
-    !["review", "accuracy", "audio", "location"].includes(b.type || "review")
-  )
+  if (!isValidFeedback(b))
     return res
       .status(400)
       .json({
@@ -139,6 +135,12 @@ app.patch("/feedback/:id/status", admin, async (req, res) => {
       });
   }
 });
+app.use((_req, res) => {
+  res
+    .status(404)
+    .json({ error: { code: "NOT_FOUND", message: "Không tìm thấy API" } });
+});
+app.use(apiErrorHandler);
 app.listen(process.env.PORT || 4104, () =>
   console.log("feedback-service ready"),
 );

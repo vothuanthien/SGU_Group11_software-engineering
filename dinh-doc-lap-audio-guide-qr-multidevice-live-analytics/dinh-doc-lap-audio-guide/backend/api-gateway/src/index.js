@@ -67,4 +67,9 @@ for (const { prefix, target, resource } of routes) {
 app.get("/api/v1", (_req, res) =>
   res.json({ name: "Dinh Doc Lap Audio Guide API", version: "1.0.0" }),
 );
+app.use((_req, res) => {
+  res
+    .status(404)
+    .json({ error: { code: "ROUTE_NOT_FOUND", message: "Không tìm thấy API" } });
+});
 app.listen(process.env.PORT || 4000, () => console.log("API Gateway ready"));

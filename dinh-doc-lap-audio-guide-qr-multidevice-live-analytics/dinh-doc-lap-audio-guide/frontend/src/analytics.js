@@ -23,7 +23,11 @@ export async function trackEvent({
   language = "vi",
   metadata = {},
 }) {
-  if (!eventType || (!attractionId && eventType !== "app_opened")) return;
+  if (
+    !eventType ||
+    (!attractionId && !["app_opened", "qr_scan"].includes(eventType))
+  )
+    return;
   try {
     await api.post("/analytics/events", {
       visitorId: getVisitorId(),

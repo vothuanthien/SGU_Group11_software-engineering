@@ -1,6 +1,10 @@
-import { app, pool } from "./base.js";
+import { apiErrorHandler, app, pool } from "./base.js";
+import { hasRequiredAttractionFields } from "./validation.js";
 import jwt from "jsonwebtoken";
-const secret = process.env.JWT_SECRET || "local_only_change_this_secret";
+const secret = process.env.JWT_SECRET;
+if (!secret || secret.length < 32) {
+  throw new Error("JWT_SECRET must be configured with at least 32 characters");
+}
 function admin(req, res, next) {
   try {
     const h = req.headers.authorization || "";
@@ -97,15 +101,7 @@ app.get("/internal/attractions/:id/exists", async (req, res) => {
 });
 app.post("/attractions", admin, async (req, res) => {
   const b = req.body || {};
-  if (
-    !b.id ||
-    !b.name_vi ||
-    !b.name_en ||
-    !b.description_vi ||
-    !b.description_en ||
-    !b.narration_vi ||
-    !b.narration_en
-  )
+  if (!hasRequiredAttractionFields(b))
     return res
       .status(400)
       .json({
@@ -315,6 +311,12 @@ app.put("/tours/:id", admin, async (req, res) => {
   }
 });
 
+app.use((_req, res) => {
+  res
+    .status(404)
+    .json({ error: { code: "NOT_FOUND", message: "Không tìm thấy API" } });
+});
+app.use(apiErrorHandler);
 app.listen(process.env.PORT || 4102, () =>
   console.log("attraction-service ready"),
 );

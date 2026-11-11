@@ -1,7 +1,7 @@
 # Deploy
 
 Local: `cp .env.example .env && docker compose up --build`.
-Production: đổi secret/mật khẩu, thiết lập GitHub Secrets, cấu hình domain/TLS, database backup, firewall và giám sát. CD workflow chỉ chạy với tag `v*`, build/push GHCR; bước SSH chỉ chạy nếu đủ `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_PATH`. Trên server phải cài Docker Compose, đăng nhập GHCR nếu image private và tạo `.env` bảo mật. Sau deploy kiểm tra `/api/v1/health`. Khi lỗi, xem `docker compose logs --tail=200 <service>`, rollback về tag image trước đó và kiểm tra DB migration/backup.
+Production: dùng secret ngẫu nhiên riêng cho `JWT_SECRET` (tối thiểu 32 ký tự), `POSTGRES_PASSWORD` và tài khoản admin; không dùng lại giá trị demo hoặc secret giữa các môi trường. Cấu hình SQL Server sync với mã hóa TLS bật và chỉ tin cậy chứng chỉ hợp lệ. Thiết lập GitHub Secrets, cấu hình domain/TLS, database backup, firewall và giám sát. CD workflow chỉ chạy với tag `v*`, build/push GHCR; bước SSH chỉ chạy nếu đủ `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_PATH`. Trên server phải cài Docker Compose, đăng nhập GHCR nếu image private và tạo `.env` bảo mật. Sau deploy kiểm tra `/api/v1/health`. Khi lỗi, xem `docker compose logs --tail=200 <service>`, rollback về tag image trước đó và kiểm tra DB migration/backup.
 
 ## Database migrations and QR rollout
 
