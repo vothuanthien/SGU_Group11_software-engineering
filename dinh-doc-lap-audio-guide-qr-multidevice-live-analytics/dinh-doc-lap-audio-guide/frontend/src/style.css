@@ -1575,3 +1575,31 @@ footer {
     width: min(230px, 70vw);
   }
 }
+
+
+/* Member 3: visible keyboard focus and form feedback states. */
+:where(a, button, input, select, textarea, audio, [tabindex]):focus-visible {
+  outline: 3px solid rgba(31, 103, 83, 0.72);
+  outline-offset: 3px;
+}
+button:disabled,
+.primary:disabled,
+.secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+.success-message {
+  color: #176b45;
+  background: #edf8f1;
+  border: 1px solid #b9e2c8;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

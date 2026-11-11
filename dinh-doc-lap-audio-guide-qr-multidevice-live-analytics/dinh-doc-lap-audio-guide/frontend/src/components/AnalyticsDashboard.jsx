@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import api from "../api.js";
 
 const empty = {
@@ -29,11 +29,15 @@ export default function AnalyticsDashboard({ lang = "vi" }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshedAt, setRefreshedAt] = useState(null);
+  const requestInFlight = useRef(false);
+  const requestInFlight = useRef(false);
   const msg = (vi, en) => (isVi ? vi : en);
 
   const load = useCallback(
     async (options = {}) => {
       const silent = Boolean(options.silent);
+      if (requestInFlight.current) return;
+      requestInFlight.current = true;
       if (!silent) setLoading(true);
       setError("");
       try {
@@ -48,6 +52,7 @@ export default function AnalyticsDashboard({ lang = "vi" }) {
               : "Could not load analytics. Check your login and the analytics service status."),
         );
       } finally {
+        requestInFlight.current = false;
         if (!silent) setLoading(false);
       }
     },
@@ -108,6 +113,16 @@ export default function AnalyticsDashboard({ lang = "vi" }) {
               "Số liệu lấy trực tiếp từ PostgreSQL và tự làm mới mỗi 5 giây. Lượt QR là số lần mở liên kết gắn source=qr; ứng dụng không thể biết camera đã quét nhưng khách chưa mở liên kết.",
               "Data is queried from PostgreSQL and refreshes every 5 seconds. QR counts are opens of links tagged source=qr; the app cannot detect a camera scan if the visitor does not open the link.",
             )}
+          </p>
+          <p className="small" aria-live="polite">
+            {refreshedAt
+              ? msg("Cập nhật lần cuối: ", "Last updated: ") + refreshedAt.toLocaleTimeString(isVi ? "vi-VN" : "en-US")
+              : msg("Chưa có lần cập nhật thành công.", "No successful refresh yet.")}
+          </p>
+          <p className="small" aria-live="polite">
+            {refreshedAt
+              ? msg("Cập nhật lần cuối: ", "Last updated: ") + refreshedAt.toLocaleTimeString(isVi ? "vi-VN" : "en-US")
+              : msg("Chưa có lần cập nhật thành công.", "No successful refresh yet.")}
           </p>
         </div>
         <div className="analytics-tools">
