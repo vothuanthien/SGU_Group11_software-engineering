@@ -34,9 +34,17 @@ function parseBaseUrl(value) {
   }
 }
 
+export function buildQrTargetUrl(normalizedBase, destination, selectedId) {
+  if (!normalizedBase) return "";
+  if (destination === "home") return `${normalizedBase}/?source=qr`;
+  if (!selectedId) return "";
+  return `${normalizedBase}/place/${encodeURIComponent(selectedId)}?source=qr`;
+}
+
 export default function QrCodeManager({ attractions = [], lang = "vi" }) {
   const isVi = lang === "vi";
   const msg = (vi, en) => (isVi ? vi : en);
+  const [destination, setDestination] = useState("home");
   const [selectedId, setSelectedId] = useState(attractions[0]?.id || "");
   const [baseUrl, setBaseUrl] = useState(initialBaseUrl);
   const [copied, setCopied] = useState(false);
@@ -58,16 +66,13 @@ export default function QrCodeManager({ attractions = [], lang = "vi" }) {
   const isLoopbackBase = parsedBase ? isLoopback(parsedBase.hostname) : false;
   const normalizedBase = parsedBase ? parsedBase.origin : "";
   const targetUrl = useMemo(
-    () =>
-      selected && normalizedBase
-        ? `${normalizedBase}/place/${encodeURIComponent(selected.id)}?source=qr`
-        : "",
-    [normalizedBase, selected],
+    () => buildQrTargetUrl(normalizedBase, destination, selected?.id),
+    [destination, normalizedBase, selected?.id],
   );
 
   const downloadSvg = () => {
     const svg = document.querySelector("#qr-code-preview svg");
-    if (!svg || !selected) return;
+    if (!svg || !targetUrl) return;
     const clone = svg.cloneNode(true);
     clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     const source = new XMLSerializer().serializeToString(clone);
@@ -75,7 +80,8 @@ export default function QrCodeManager({ attractions = [], lang = "vi" }) {
     const objectUrl = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = objectUrl;
-    link.download = `qr-${selected.id}.svg`;
+    link.download =
+      destination === "home" ? "qr-home.svg" : `qr-${selected.id}.svg`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -97,31 +103,46 @@ export default function QrCodeManager({ attractions = [], lang = "vi" }) {
   return (
     <section className="form-page qr-manager">
       <p className="eyebrow">SCAN TO EXPLORE</p>
-      <h2>{msg("Quản lý mã QR địa điểm", "Attraction QR codes")}</h2>
+      <h2>{msg("Quản lý mã QR", "QR codes")}</h2>
       <p className="small">
         {msg(
-          "Mỗi mã mở thẳng trang thuyết minh của địa điểm. Khi khách mở liên kết QR, bắt đầu nghe hoặc nghe hết, hệ thống ghi các sự kiện vào PostgreSQL để dashboard thống kê.",
-          "Each code opens the selected attraction. Opening a QR link, starting narration and completing narration are saved to PostgreSQL for the dashboard.",
+          "Tạo mã QR mở trang chủ hoặc mở thẳng trang thuyết minh của một địa điểm. Khi khách mở liên kết QR, bắt đầu nghe hoặc nghe hết, hệ thống ghi các sự kiện vào PostgreSQL để dashboard thống kê.",
+          "Create a QR code for the home page or a specific attraction. Opening a QR link, starting narration and completing narration are saved to PostgreSQL for the dashboard.",
         )}
       </p>
 
       <div className="qr-manager-grid">
         <div className="form-card">
           <label>
-            {msg("Chọn địa điểm", "Choose attraction")}
+            {msg("Nơi mở khi quét mã", "Open this page when scanned")}
             <select
-              value={selectedId}
-              onChange={(event) => setSelectedId(event.target.value)}
+              value={destination}
+              onChange={(event) => setDestination(event.target.value)}
             >
-              {attractions
-                .filter((item) => item.visible !== false)
-                .map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {isVi ? item.name_vi : item.name_en}
-                  </option>
-                ))}
+              <option value="home">{msg("Trang chủ", "Home page")}</option>
+              <option value="place">
+                {msg("Trang địa điểm", "Attraction page")}
+              </option>
             </select>
           </label>
+
+          {destination === "place" && (
+            <label>
+              {msg("Chọn địa điểm", "Choose attraction")}
+              <select
+                value={selectedId}
+                onChange={(event) => setSelectedId(event.target.value)}
+              >
+                {attractions
+                  .filter((item) => item.visible !== false)
+                  .map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {isVi ? item.name_vi : item.name_en}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          )}
 
           <label>
             {msg(
@@ -217,7 +238,7 @@ export default function QrCodeManager({ attractions = [], lang = "vi" }) {
         </div>
 
         <div className="form-card qr-preview-card">
-          {selected && targetUrl ? (
+          {targetUrl ? (
             <>
               <div id="qr-code-preview" className="qr-code-preview">
                 <QRCodeSVG
@@ -226,13 +247,21 @@ export default function QrCodeManager({ attractions = [], lang = "vi" }) {
                   level="H"
                   includeMargin
                   title={
-                    isVi
-                      ? `Mã QR ${selected.name_vi}`
-                      : `QR code for ${selected.name_en}`
+                    destination === "home"
+                      ? msg("Mã QR trang chủ", "Home page QR code")
+                      : isVi
+                        ? `Mã QR ${selected?.name_vi}`
+                        : `QR code for ${selected?.name_en}`
                   }
                 />
               </div>
-              <h3>{isVi ? selected.name_vi : selected.name_en}</h3>
+              <h3>
+                {destination === "home"
+                  ? msg("Trang chủ", "Home page")
+                  : isVi
+                    ? selected?.name_vi
+                    : selected?.name_en}
+              </h3>
               <p className="small">
                 {msg(
                   "Quét bằng camera điện thoại. Nhiều điện thoại có thể dùng cùng mã; mỗi trình duyệt được nhận diện bằng mã ẩn danh riêng.",

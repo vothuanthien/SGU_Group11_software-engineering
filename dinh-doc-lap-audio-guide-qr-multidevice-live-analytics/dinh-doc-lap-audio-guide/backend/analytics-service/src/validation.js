@@ -12,7 +12,7 @@ const uuidPattern =
 
 export function isValidAnalyticsEvent(body) {
   const { visitorId, eventType, attractionId, language } = body || {};
-  const needsAttraction = eventType !== "app_opened";
+  const needsAttraction = !["app_opened", "qr_scan"].includes(eventType);
   const validAttractionId =
     typeof attractionId === "string" &&
     /^[a-zA-Z0-9_-]{1,100}$/.test(attractionId);

@@ -153,11 +153,22 @@ function App() {
   }, [lang, location.pathname]);
   useEffect(() => {
     const match = location.pathname.match(/^\/place\/([^/]+)$/);
+    const routeKey = `${location.key}:${location.pathname}${location.search}`;
     if (!match) {
+      const params = new URLSearchParams(location.search);
+      if (location.pathname === "/" && params.get("source") === "qr") {
+        if (trackedLocationRef.current === routeKey) return;
+        trackedLocationRef.current = routeKey;
+        trackEvent({
+          eventType: "qr_scan",
+          language: lang,
+          metadata: { source: "qr" },
+        });
+        return;
+      }
       trackedLocationRef.current = `not-place:${location.key}:${location.pathname}`;
       return;
     }
-    const routeKey = `${location.key}:${location.pathname}${location.search}`;
     if (trackedLocationRef.current === routeKey) return;
     trackedLocationRef.current = routeKey;
     const attractionId = decodeURIComponent(match[1]);

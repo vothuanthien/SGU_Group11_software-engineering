@@ -12,6 +12,10 @@ describe("analytics input rules", () => {
     expect(isValidAnalyticsEvent(event)).toBe(true);
   });
 
+  it("accepts a QR scan event for the home page without an attraction", () => {
+    expect(isValidAnalyticsEvent({ ...event, eventType: "qr_scan" })).toBe(true);
+  });
+
   it("rejects invalid visitor IDs, event types, and languages", () => {
     expect(isValidAnalyticsEvent({ ...event, visitorId: "visitor-123" })).toBe(false);
     expect(isValidAnalyticsEvent({ ...event, eventType: "arbitrary" })).toBe(false);

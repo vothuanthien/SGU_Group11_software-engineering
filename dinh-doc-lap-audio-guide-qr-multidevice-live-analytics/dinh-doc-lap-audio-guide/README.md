@@ -15,6 +15,7 @@ Nếu đã chạy phiên bản cũ, volume PostgreSQL hiện hữu có thể v�
 ## Sử dụng QR và dashboard thống kê
 
 - Đăng nhập ở mục **Quản trị** → **Mã QR**. Nếu giao diện được mở tại `localhost`, hãy chạy `ipconfig` trên máy tính, tìm IPv4 Address của card Wi-Fi/Ethernet, rồi nhập `http://IP-IPv4:8080` (ví dụ `http://192.168.1.20:8080`) trước khi tải QR. Giao diện cảnh báo nếu URL còn trỏ tới localhost.
+- Chọn **Trang chủ** để tạo QR mở trang chính của ứng dụng hoặc chọn **Trang địa điểm** để tạo QR mở thẳng một địa điểm cụ thể. Cả hai loại mã đều gắn `source=qr` để ghi nhận lượt quét khi khách mở liên kết.
 - Để thử quét bằng nhiều điện thoại: tất cả thiết bị phải cùng Wi-Fi với máy tính chạy Docker; máy tính phải bật và ứng dụng đang chạy. Quét bằng camera mặc định của điện thoại và mở liên kết. Nếu không truy cập được, kiểm tra Windows Defender Firewall cho phép truy cập mạng Private vào Docker/port 8080. Không cần và không nên mở port trên router Internet chỉ để thử LAN.
 - Để khách sử dụng ở địa điểm tham quan qua mạng di động hoặc Wi-Fi khác, cần triển khai ứng dụng lên máy chủ/domain công khai có HTTPS, sau đó nhập domain đó khi tạo QR. Mã QR không thể làm địa chỉ `localhost` hay IP nội bộ truy cập được từ Internet.
 - Khách không cần tạo tài khoản để xem/nghe. Hệ thống ghi nhận sự kiện `app_opened`, `qr_scan` (khi link QR được mở), `place_opened`, `narration_started`, `narration_completed` và `visit_marked`. Dashboard tự đọc lại số liệu từ PostgreSQL mỗi 5 giây khi đang mở. Khi nhiều điện thoại quét cùng mã, mỗi trình duyệt có UUID ẩn danh riêng và mỗi sự kiện được ghi thành dòng riêng.
@@ -62,7 +63,7 @@ Mỗi service có `npm test`; trong thư mục service chạy `npm install` trư
 - Nội dung địa điểm được cung cấp là dữ liệu demo ngắn; cần biên tập/đối chiếu với nguồn chính thức của Dinh Độc Lập trước khi dùng công khai. Các URL nguồn chính thức được để trong dữ liệu.
 - Thuyết minh sử dụng Web Speech API, giọng đọc phụ thuộc trình duyệt/hệ điều hành; chưa kèm file audio thu âm sẵn.
 - GPS kích hoạt dùng tọa độ cấu hình demo và bán kính 80m; GPS trong nhà không đảm bảo chính xác. Chế độ chọn thủ công luôn có sẵn.
-- QR code cho từng địa điểm và dashboard thống kê sự kiện đã được bổ sung. Dữ liệu khách là mã định danh ẩn danh trong trình duyệt, không cho biết danh tính thật; nếu đổi trình duyệt/thiết bị hoặc xóa storage, một người có thể xuất hiện thành khách mới. “Đã tham quan” trong dashboard là lượt khách chủ động bấm nút đánh dấu.
+- QR code mở trang chủ hoặc từng địa điểm và dashboard thống kê sự kiện đã được bổ sung. Dữ liệu khách là mã định danh ẩn danh trong trình duyệt, không cho biết danh tính thật; nếu đổi trình duyệt/thiết bị hoặc xóa storage, một người có thể xuất hiện thành khách mới. “Đã tham quan” trong dashboard là lượt khách chủ động bấm nút đánh dấu.
 - PWA/offline audio, upload tệp audio/ảnh từ giao diện, refresh token, đồng bộ tiến độ khách trên nhiều thiết bị và triển khai production đầy đủ chưa nằm trong MVP. Audio dùng Web Speech API; phần quản trị hỗ trợ lưu URL ảnh nhưng chưa có luồng upload file.
 - GitHub Actions là cấu hình mẫu, chưa thể tuyên bố CI/CD đã chạy thành công trong repository thật. Chạy các lệnh kiểm thử để xác nhận trên máy của bạn.
 
