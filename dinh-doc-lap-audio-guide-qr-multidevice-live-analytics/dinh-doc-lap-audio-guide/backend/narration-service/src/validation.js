@@ -1,3 +1,3 @@
 export function isSupportedLanguage(language) {
-  return ["vi", "en"].includes(language);
+  return ["vi", "en", "zh", "th"].includes(language);
 }

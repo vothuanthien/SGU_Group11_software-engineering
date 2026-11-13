@@ -25,11 +25,12 @@ services:
     volumes:
       - ./database/migrations/001_narration_publication.sql:/migrations/001_narration_publication.sql:ro
       - ./database/migrations/002_visitor_analytics.sql:/migrations/002_visitor_analytics.sql:ro
+      - ./database/migrations/003_multilingual_narration.sql:/migrations/003_multilingual_narration.sql:ro
     command:
       [
         "sh",
         "-c",
-        "psql -v ON_ERROR_STOP=1 -f /migrations/001_narration_publication.sql && psql -v ON_ERROR_STOP=1 -f /migrations/002_visitor_analytics.sql",
+        "psql -v ON_ERROR_STOP=1 -f /migrations/001_narration_publication.sql && psql -v ON_ERROR_STOP=1 -f /migrations/002_visitor_analytics.sql && psql -v ON_ERROR_STOP=1 -f /migrations/003_multilingual_narration.sql",
       ]
     depends_on:
       postgres:

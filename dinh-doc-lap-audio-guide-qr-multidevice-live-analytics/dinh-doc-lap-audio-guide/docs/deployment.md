@@ -19,7 +19,9 @@ The dump is written under the ignored `backups/` directory. Test that it can act
 
 ## Database migrations and QR rollout
 
-`docker compose up --build` also runs the one-shot `database-migration` container after PostgreSQL becomes healthy. It applies `001_narration_publication.sql` and `002_visitor_analytics.sql` idempotently so existing named volumes gain the required columns and analytics table without dropping data. If a migration fails, inspect `docker compose logs database-migration` before retrying.
+`docker compose up --build` also runs the one-shot `database-migration` container after PostgreSQL becomes healthy. It applies migrations `001`–`003` idempotently so existing named volumes gain the required columns, analytics table, and vi/en/zh/th language constraints without dropping existing data. The multilingual narration migration seeds Chinese and Thai translations for the eight existing attractions only where those fields are null. If a migration fails, inspect `docker compose logs database-migration` before retrying.
+
+The zh/th narration text is translated from the existing Vietnamese/English sample text and is marked as a draft for content-team review. No Chinese or Thai audio files are included; playback uses browser speech synthesis until reviewed recordings are added through the admin audio URL fields. Available voices depend on the visitor's device and browser.
 
 After logging in as admin, open **Analytics** to inspect anonymous QR, visit and narration events, or open **QR codes** to choose an attraction and download its SVG QR. Before printing, set the QR base URL to the deployed HTTPS domain (or a LAN address accessible to a phone). QR codes built with `localhost` will not open the service on a different device.
 

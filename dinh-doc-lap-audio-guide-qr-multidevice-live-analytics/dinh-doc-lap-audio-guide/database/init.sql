@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 CREATE TABLE IF NOT EXISTS attractions (
  id TEXT PRIMARY KEY, name_vi TEXT NOT NULL, name_en TEXT NOT NULL, description_vi TEXT NOT NULL, description_en TEXT NOT NULL,
- narration_vi TEXT NOT NULL, narration_en TEXT NOT NULL, area_vi TEXT NOT NULL DEFAULT 'Khuôn viên', area_en TEXT NOT NULL DEFAULT 'Grounds',
+ narration_vi TEXT NOT NULL, narration_en TEXT NOT NULL, narration_zh TEXT, narration_th TEXT, area_vi TEXT NOT NULL DEFAULT 'Khuôn viên', area_en TEXT NOT NULL DEFAULT 'Grounds',
  latitude DOUBLE PRECISION, longitude DOUBLE PRECISION, sort_order INTEGER NOT NULL DEFAULT 0, duration_minutes INTEGER NOT NULL DEFAULT 2,
  image_url TEXT, source_url TEXT, visible BOOLEAN NOT NULL DEFAULT TRUE, narration_published BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS feedback (
  message TEXT NOT NULL CHECK (char_length(message) <= 1000), type TEXT NOT NULL DEFAULT 'review' CHECK (type IN ('review','accuracy','audio','location')),
  status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','reviewing','resolved')), created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE TABLE IF NOT EXISTS narration_assets (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), attraction_id TEXT REFERENCES attractions(id) ON DELETE CASCADE, language TEXT NOT NULL CHECK(language IN ('vi','en')), audio_url TEXT, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE(attraction_id, language));
+CREATE TABLE IF NOT EXISTS narration_assets (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), attraction_id TEXT REFERENCES attractions(id) ON DELETE CASCADE, language TEXT NOT NULL CHECK(language IN ('vi','en','zh','th')), audio_url TEXT, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE(attraction_id, language));
 CREATE INDEX IF NOT EXISTS idx_attractions_visible_order ON attractions(visible, sort_order);
 CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at DESC);
 CREATE TABLE IF NOT EXISTS visitor_events (
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS visitor_events (
  visitor_id UUID NOT NULL,
  event_type TEXT NOT NULL CHECK (event_type IN ('app_opened','qr_scan','place_opened','visit_marked','narration_started','narration_completed')),
  attraction_id TEXT REFERENCES attractions(id) ON DELETE CASCADE,
- language TEXT NOT NULL CHECK (language IN ('vi','en')),
+ language TEXT NOT NULL CHECK (language IN ('vi','en','zh','th')),
  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

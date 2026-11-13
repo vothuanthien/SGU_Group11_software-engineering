@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import api from "../api.js";
+import { LANGUAGES, localizedField, translatePair } from "../i18n.js";
 
 const empty = {
   periodDays: 30,
@@ -23,7 +24,6 @@ const empty = {
 };
 
 export default function AnalyticsDashboard({ lang = "vi" }) {
-  const isVi = lang === "vi";
   const [days, setDays] = useState(30);
   const [data, setData] = useState(empty);
   const [loading, setLoading] = useState(true);
@@ -31,7 +31,7 @@ export default function AnalyticsDashboard({ lang = "vi" }) {
   const [refreshedAt, setRefreshedAt] = useState(null);
   const requestInFlight = useRef(false);
 
-  const msg = (vi, en) => (isVi ? vi : en);
+  const msg = (vi, en) => translatePair(lang, vi, en);
 
   const load = useCallback(
     async (options = {}) => {
@@ -47,16 +47,17 @@ export default function AnalyticsDashboard({ lang = "vi" }) {
       } catch (err) {
         setError(
           err.response?.data?.error?.message ||
-            (isVi
-              ? "Không tải được thống kê. Hãy kiểm tra đăng nhập và trạng thái dịch vụ analytics."
-              : "Could not load analytics. Check your login and the analytics service status."),
+            msg(
+              "Không tải được thống kê. Hãy kiểm tra đăng nhập và trạng thái dịch vụ analytics.",
+              "Could not load analytics. Check your login and the analytics service status.",
+            ),
         );
       } finally {
         requestInFlight.current = false;
         if (!silent) setLoading(false);
       }
     },
-    [days, isVi],
+    [days, lang],
   );
 
   // Poll while the dashboard is visible. The backend queries PostgreSQL on each
@@ -100,13 +101,19 @@ export default function AnalyticsDashboard({ lang = "vi" }) {
       ? msg("Tiếng Việt", "Vietnamese")
       : value === "en"
         ? msg("Tiếng Anh", "English")
+        : value === "zh"
+          ? "中文"
+          : value === "th"
+            ? "ภาษาไทย"
         : msg("Chưa có dữ liệu", "No data yet");
 
   return (
     <section className="analytics-dashboard">
       <div className="section-head analytics-heading">
         <div>
-          <p className="eyebrow">VISITOR INSIGHTS</p>
+          <p className="eyebrow">
+            {msg("THỐNG KÊ KHÁCH THAM QUAN", "VISITOR INSIGHTS")}
+          </p>
           <h2>{msg("Thống kê tham quan", "Visitor analytics")}</h2>
           <p className="small">
             {msg(
@@ -116,7 +123,7 @@ export default function AnalyticsDashboard({ lang = "vi" }) {
           </p>
           <p className="small" aria-live="polite">
             {refreshedAt
-              ? msg("Cập nhật lần cuối: ", "Last updated: ") + refreshedAt.toLocaleTimeString(isVi ? "vi-VN" : "en-US")
+              ? msg("Cập nhật lần cuối: ", "Last updated: ") + refreshedAt.toLocaleTimeString(LANGUAGES[lang].locale)
               : msg("Chưa có lần cập nhật thành công.", "No successful refresh yet.")}
           </p>
          
@@ -219,7 +226,9 @@ export default function AnalyticsDashboard({ lang = "vi" }) {
       <section className="analytics-funnel form-card">
         <div className="section-head">
           <div>
-            <p className="eyebrow">ENGAGEMENT FUNNEL</p>
+            <p className="eyebrow">
+              {msg("HÀNH TRÌNH TƯƠNG TÁC", "ENGAGEMENT FUNNEL")}
+            </p>
             <h3>{msg("Hành trình sử dụng", "Visitor journey")}</h3>
           </div>
           <span className="small">
@@ -391,7 +400,9 @@ export default function AnalyticsDashboard({ lang = "vi" }) {
                 {data.topAttractions.map((row) => (
                   <tr key={row.id}>
                     <td>
-                      <strong>{isVi ? row.name_vi : row.name_en}</strong>
+                      <strong>
+                        {localizedField(row, "name", lang) || msg("Chưa có tên bằng ngôn ngữ này", "Name unavailable in this language")}
+                      </strong>
                       <small>{row.id}</small>
                     </td>
                     <td>{row.qr_scans}</td>
@@ -448,7 +459,10 @@ export default function AnalyticsDashboard({ lang = "vi" }) {
                         {String(row.visitor_id).slice(0, 8)}…
                       </code>
                     </td>
-                    <td>{isVi ? row.name_vi : row.name_en}</td>
+                    <td>
+                      {localizedField(row, "name", lang) ||
+                        msg("Chưa có tên bằng ngôn ngữ này", "Name unavailable in this language")}
+                    </td>
                     <td>
                       <div className="activity-tags">
                         {row.scanned_qr && <span>QR</span>}
@@ -463,7 +477,7 @@ export default function AnalyticsDashboard({ lang = "vi" }) {
                     <td>{row.language ? languageLabel(row.language) : "—"}</td>
                     <td>
                       {new Date(row.last_activity).toLocaleString(
-                        isVi ? "vi-VN" : "en-US",
+                        LANGUAGES[lang].locale,
                       )}
                     </td>
                   </tr>
@@ -476,7 +490,7 @@ export default function AnalyticsDashboard({ lang = "vi" }) {
       {refreshedAt && (
         <p className="small analytics-footnote">
           {msg("Tự cập nhật lúc", "Auto-refreshed at")}{" "}
-          {refreshedAt.toLocaleTimeString(isVi ? "vi-VN" : "en-US")} ·{" "}
+          {refreshedAt.toLocaleTimeString(LANGUAGES[lang].locale)} ·{" "}
           {msg("chu kỳ 5 giây", "5-second interval")}.
         </p>
       )}

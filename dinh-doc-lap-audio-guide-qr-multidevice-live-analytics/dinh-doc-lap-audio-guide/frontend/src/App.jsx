@@ -11,104 +11,17 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import api from "./api.js";
 import { trackEvent } from "./analytics.js";
+import LanguageSwitcher from "./components/LanguageSwitcher.jsx";
 import AnalyticsDashboard from "./components/AnalyticsDashboard.jsx";
 import QrCodeManager from "./components/QrCodeManager.jsx";
-const words = {
-  vi: {
-    home: "Khám phá Dinh Độc Lập",
-    sub: "Lắng nghe những câu chuyện lịch sử theo cách của bạn.",
-    start: "Bắt đầu tham quan",
-    map: "Bản đồ & điểm tham quan",
-    route: "Lộ trình gợi ý",
-    manual: "Chọn điểm thủ công",
-    auto: "Thuyết minh tự động",
-    on: "Bật",
-    off: "Tắt",
-    listen: "Nghe thuyết minh",
-    stop: "Dừng đọc",
-    text: "Nội dung thuyết minh",
-    all: "Tất cả điểm tham quan",
-    back: "Quay lại",
-    backMap: "Quay lại bản đồ tham quan",
-    area: "Khu vực",
-    duration: "phút",
-    visited: "Đã tham quan",
-    mark: "Đánh dấu đã tham quan",
-    send: "Gửi phản hồi",
-    rating: "Đánh giá",
-    message: "Nhận xét của bạn",
-    kind: "Loại phản hồi",
-    review: "Đánh giá trải nghiệm",
-    accuracy: "Báo cáo nội dung",
-    audio: "Lỗi âm thanh",
-    location: "Lỗi vị trí",
-    admin: "Quản trị",
-    login: "Đăng nhập quản trị",
-    email: "Email",
-    password: "Mật khẩu",
-    logout: "Đăng xuất",
-    dashboard: "Tổng quan",
-    error: "Không tải được dữ liệu. Hãy thử tải lại.",
-    gps: "Định vị",
-    gpsDenied: "Không lấy được GPS; bạn vẫn có thể chọn điểm thủ công.",
-    language: "English",
-    progress: "Tiến độ",
-    source: "Nguồn tham khảo",
-    playTip: "Âm thanh dùng giọng đọc có sẵn trên trình duyệt.",
-  },
-  en: {
-    home: "Explore Independence Palace",
-    sub: "Listen to history in your own way.",
-    start: "Start your visit",
-    map: "Map & attractions",
-    route: "Suggested tour",
-    manual: "Choose a stop",
-    auto: "Automatic narration",
-    on: "On",
-    off: "Off",
-    listen: "Listen to narration",
-    stop: "Stop reading",
-    text: "Narration text",
-    all: "All attractions",
-    back: "Back",
-    backMap: "Back to map & attractions",
-    area: "Area",
-    duration: "min",
-    visited: "Visited",
-    mark: "Mark as visited",
-    send: "Send feedback",
-    rating: "Rating",
-    message: "Your comment",
-    kind: "Feedback type",
-    review: "Visitor review",
-    accuracy: "Content report",
-    audio: "Audio issue",
-    location: "Location issue",
-    admin: "Admin",
-    login: "Admin login",
-    email: "Email",
-    password: "Password",
-    logout: "Log out",
-    dashboard: "Dashboard",
-    error: "Could not load data. Please retry.",
-    gps: "Location",
-    gpsDenied: "Location unavailable; manual selection still works.",
-    language: "Tiếng Việt",
-    progress: "Progress",
-    source: "Reference",
-    playTip: "Speech uses voices available in your browser.",
-  },
-};
-const attractionImages = {
-  "main-building": { src: "/images/main-building.jpg", alt: "Mặt tiền Tòa nhà chính" },
-  "front-lawn": { src: "/images/front-lawn.jpg", alt: "Thảm cỏ và khuôn viên phía trước Dinh Độc Lập" },
-  "helicopter-pad": { src: "/images/helicopter-pad.jpg", alt: "Sân đáp trực thăng trên sân thượng" },
-  "conference-room": { src: "/images/ceremonial-hall.jpg", alt: "Không gian phòng khánh tiết" },
-  "cabinet-room": { src: "/images/carbinet-room.jpg", alt: "Nội thất phòng nội các" },
-  exhibition: { src: "/images/ceremonial-area.jpg", alt: "Không gian trưng bày tư liệu" },
-  basement: { src: "/images/basement.jpg", alt: "Thiết bị trong khu tầng hầm" },
-  garden: { src: "/images/garden.jpg", alt: "Vườn và khuôn viên Dinh Độc Lập" },
-};
+import { attractionImages } from "./constants/appContent.js";
+import {
+  getInitialLanguage,
+  LANGUAGES,
+  localizedField,
+  translatePair,
+  words,
+} from "./i18n.js";
 const numberedMarkerIcon = (number, gold = false) =>
   L.divIcon({
     className: `attraction-marker${gold ? " attraction-marker-gold" : ""}`,
@@ -119,7 +32,7 @@ const numberedMarkerIcon = (number, gold = false) =>
   });
 function App() {
   const location = useLocation();
-  const [lang, setLang] = useState(localStorage.getItem("dinh_lang") || "vi");
+  const [lang, setLang] = useState(getInitialLanguage);
   const [attractions, setAttractions] = useState([]);
   const [tours, setTours] = useState([]);
   const [error, setError] = useState("");
@@ -133,9 +46,31 @@ function App() {
   const [selected, setSelected] = useState(null);
   const spoken = useRef(new Set());
   const trackedLocationRef = useRef("");
+  const gpsAudioRef = useRef(null);
+  const selectedLanguageRef = useRef(lang);
   const t = words[lang];
+  const msg = (vi, en) => translatePair(lang, vi, en);
+  const localized = (item, field) => localizedField(item, field, lang);
+  const selectLanguage = (language) => {
+    selectedLanguageRef.current = language;
+    try {
+      localStorage.setItem("dinh_lang", language);
+    } catch {
+      // The selected language remains active for the current page.
+    }
+    window.speechSynthesis?.cancel();
+    gpsAudioRef.current?.pause();
+    gpsAudioRef.current = null;
+    setPlaying(false);
+    setLang(language);
+  };
   useEffect(() => {
-    localStorage.setItem("dinh_lang", lang);
+    try {
+      localStorage.setItem("dinh_lang", lang);
+    } catch {
+      // The selected language remains active for the current page.
+    }
+    document.documentElement.lang = LANGUAGES[lang].locale;
   }, [lang]);
   useEffect(() => {
     localStorage.setItem("dinh_visited", JSON.stringify(visited));
@@ -188,14 +123,21 @@ function App() {
       });
   }, [lang, location.key, location.pathname, location.search]);
   useEffect(() => {
+    let cancelled = false;
     Promise.all([api.get("/attractions"), api.get("/tours")])
       .then(([a, b]) => {
+        if (cancelled) return;
         setAttractions(a.data.data || []);
         setTours(b.data.data || []);
         setError("");
       })
-      .catch(() => setError(t.error));
-  }, []);
+      .catch(() => {
+        if (!cancelled) setError(t.error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [lang, t.error]);
   useEffect(() => {
     if (!auto) return;
     if (!navigator.geolocation) {
@@ -220,18 +162,60 @@ function App() {
           spoken.current.add(near.id);
           setSelected(near);
           setNotice(
-            `${lang === "vi" ? "Bạn đang gần" : "You are near"}: ${lang === "vi" ? near.name_vi : near.name_en}`,
+            `${t.near}: ${localized(near, "name") || t.unavailable}`,
           );
           if ("speechSynthesis" in window) {
             api
               .get(`/narrations/${near.id}/${lang}`)
               .then((r) => {
-                if (!auto) return;
+                if (!auto || selectedLanguageRef.current !== lang) return;
+                const narration = r.data.data;
+                if (
+                  !narration?.text ||
+                  (narration.language && narration.language !== lang)
+                ) {
+                  setNotice(t.narrationUnavailable);
+                  return;
+                }
                 window.speechSynthesis.cancel();
+                if (narration.audioUrl) {
+                  const audio = new window.Audio(narration.audioUrl);
+                  gpsAudioRef.current = audio;
+                  audio.onplay = () => {
+                    setPlaying(true);
+                    trackEvent({
+                      eventType: "narration_started",
+                      attractionId: near.id,
+                      language: lang,
+                      metadata: { player: "gps_audio_file" },
+                    });
+                  };
+                  audio.onended = () => {
+                    setPlaying(false);
+                    gpsAudioRef.current = null;
+                    trackEvent({
+                      eventType: "narration_completed",
+                      attractionId: near.id,
+                      language: lang,
+                      metadata: { player: "gps_audio_file" },
+                    });
+                  };
+                  audio.onerror = () => {
+                    setPlaying(false);
+                    gpsAudioRef.current = null;
+                    setNotice(t.audioUnavailable);
+                  };
+                  audio.play().catch(() => {
+                    setPlaying(false);
+                    gpsAudioRef.current = null;
+                    setNotice(t.audioUnavailable);
+                  });
+                  return;
+                }
                 const utterance = new SpeechSynthesisUtterance(
-                  r.data.data.text,
+                  narration.text,
                 );
-                utterance.lang = lang === "vi" ? "vi-VN" : "en-US";
+                utterance.lang = LANGUAGES[lang].locale;
                 utterance.onstart = () => {
                   setPlaying(true);
                   trackEvent({
@@ -253,25 +237,19 @@ function App() {
                 utterance.onerror = () => {
                   setPlaying(false);
                   setNotice(
-                    lang === "vi"
-                      ? "Không phát được tự động; hãy mở điểm và nhấn Nghe."
-                      : "Auto playback failed; open the stop and press Play.",
+                    t.autoFailed,
                   );
                 };
                 window.speechSynthesis.speak(utterance);
               })
               .catch(() =>
                 setNotice(
-                  lang === "vi"
-                    ? "Nội dung chưa sẵn sàng; hãy chọn điểm thủ công."
-                    : "Narration unavailable; choose a stop manually.",
+                  t.narrationNotReady,
                 ),
               );
           } else
             setNotice(
-              lang === "vi"
-                ? "Trình duyệt không hỗ trợ đọc tự động; hãy chọn điểm thủ công."
-                : "Speech is unsupported; choose a stop manually.",
+              t.speechNotSupported,
             );
         }
       },
@@ -282,7 +260,19 @@ function App() {
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 },
     );
     return () => navigator.geolocation.clearWatch(id);
-  }, [auto, attractions, lang, playing]);
+  }, [
+    auto,
+    attractions,
+    lang,
+    playing,
+    t.audioUnavailable,
+    t.autoFailed,
+    t.near,
+    t.narrationNotReady,
+    t.narrationUnavailable,
+    t.speechNotSupported,
+    t.unavailable,
+  ]);
   const toggleVisit = (id) => {
     const isMarking = !visited.includes(id);
     setVisited((v) =>
@@ -299,17 +289,22 @@ function App() {
     if (!a) return;
     if (!("speechSynthesis" in window)) {
       setNotice(
-        lang === "vi"
-          ? "Trình duyệt không hỗ trợ đọc văn bản."
-          : "This browser does not support speech synthesis.",
+        t.speechUnsupported,
       );
       return;
     }
     try {
       const r = await api.get(`/narrations/${a.id}/${lang}`);
+      if (selectedLanguageRef.current !== lang) return;
+      if (r.data.data?.language && r.data.data.language !== lang) {
+        throw new Error("Narration language mismatch");
+      }
+      if (!r.data.data?.text) {
+        throw new Error("Narration text is missing");
+      }
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(r.data.data.text);
-      u.lang = lang === "vi" ? "vi-VN" : "en-US";
+      u.lang = LANGUAGES[lang].locale;
       u.onstart = () => {
         setPlaying(true);
         trackEvent({
@@ -328,24 +323,21 @@ function App() {
       };
       u.onerror = () => {
         setPlaying(false);
-        setNotice(
-          lang === "vi"
-            ? "Không phát được giọng đọc trên trình duyệt này."
-            : "Speech playback failed in this browser.",
-        );
+        setNotice(t.speechFailed);
       };
       window.speechSynthesis.speak(u);
     } catch (e) {
       setNotice(
-        e.response?.data?.error?.message ||
-          (lang === "vi"
-            ? "Chưa có nội dung thuyết minh được công bố."
-            : "No published narration is available."),
+        lang === "zh" || lang === "th"
+          ? t.narrationUnavailable
+          : e.response?.data?.error?.message || t.narrationUnavailable,
       );
     }
   };
   const stop = () => {
     window.speechSynthesis?.cancel();
+    gpsAudioRef.current?.pause();
+    gpsAudioRef.current = null;
     setPlaying(false);
   };
   const detail = (id) => (
@@ -359,6 +351,7 @@ function App() {
       speak={speak}
       playing={playing}
       stop={stop}
+      setPlaying={setPlaying}
       setSelected={setSelected}
     />
   );
@@ -373,12 +366,7 @@ function App() {
           <Link to="/map">{t.map}</Link>
           <Link to="/feedback">{t.send}</Link>
           <Link to="/admin">{t.admin}</Link>
-          <button
-            className="language"
-            onClick={() => setLang(lang === "vi" ? "en" : "vi")}
-          >
-            {t.language}
-          </button>
+          <LanguageSwitcher language={lang} onChange={selectLanguage} />
         </nav>
       </header>
       {notice && (
@@ -396,7 +384,7 @@ function App() {
               <>
                 <section className="hero">
                   <div className="hero-copy">
-                    <p className="eyebrow">HISTORICAL AUDIO WALK</p>
+                    <p className="eyebrow">{t.heroEyebrow}</p>
                     <h1>{t.home}</h1>
                     <p>{t.sub}</p>
                     <div className="hero-actions">
@@ -409,7 +397,10 @@ function App() {
                           setAuto((v) => !v);
                           if (!auto)
                             setNotice(
-                              "Hãy cho phép định vị và tương tác với trang trước khi phát giọng đọc tự động.",
+                              msg(
+                                "Hãy cho phép định vị và tương tác với trang trước khi phát giọng đọc tự động.",
+                                "Allow location access and interact with the page before automatic narration.",
+                              ),
                             );
                         }}
                       >
@@ -421,19 +412,17 @@ function App() {
                   <div className="hero-art">
                     <img
                       src="/images/main-building.jpg"
-                      alt="Mặt tiền Dinh Độc Lập"
+                      alt={t.heroAlt}
                       fetchPriority="high"
                     />
                     <span className="hero-art-caption">
-                      {lang === "vi"
-                        ? "Tòa nhà chính · Dinh Độc Lập"
-                        : "Main Building · Independence Palace"}
+                      {localized(attractions.find((item) => item.id === "main-building"), "name") || t.unavailable} · Dinh Độc Lập
                     </span>
                   </div>
                 </section>
                 <section className="section-head">
                   <div>
-                    <p className="eyebrow">YOUR VISIT</p>
+                    <p className="eyebrow">{t.visitEyebrow}</p>
                     <h2>{t.all}</h2>
                   </div>
                   <span>
@@ -472,13 +461,13 @@ function App() {
                           </span>
                           <div>
                             <p className="muted">
-                              {lang === "vi" ? a.area_vi : a.area_en}
+                              {localized(a, "area") || t.unavailable}
                             </p>
-                            <h3>{lang === "vi" ? a.name_vi : a.name_en}</h3>
+                            <h3>{localized(a, "name") || t.unavailable}</h3>
                           </div>
                         </div>
                         <p>
-                          {lang === "vi" ? a.description_vi : a.description_en}
+                          {localized(a, "description") || t.unavailable}
                         </p>
                         <Link to={`/place/${encodeURIComponent(a.id)}`} className="text-link">
                           {t.listen} ↗
@@ -492,13 +481,11 @@ function App() {
                 </div>
                 <section className="tour-banner">
                   <div>
-                    <p className="eyebrow">CURATED WALK</p>
+                    <p className="eyebrow">{t.curatedEyebrow}</p>
                     <h2>{t.route}</h2>
                     <p>
                       {tours[0]
-                        ? lang === "vi"
-                          ? tours[0].description_vi
-                          : tours[0].description_en
+                        ? localized(tours[0], "description") || t.unavailable
                         : ""}
                     </p>
                   </div>
@@ -543,10 +530,7 @@ function App() {
       <footer>
         <span>Dinh Doc Lap Audio Guide</span>
         <span>
-          {lang === "vi"
-            ? "Thống kê dùng mã ẩn danh"
-            : "Analytics use anonymous IDs"}{" "}
-          · Demo • Việt / English
+          {t.visitorAnalytics} · Demo
         </span>
       </footer>
     </>
@@ -581,33 +565,48 @@ function Detail({
   speak,
   playing,
   stop,
+  setPlaying,
 }) {
   const [n, setN] = useState(null);
   const [narrationError, setNarrationError] = useState("");
   const audioRef = useRef(null);
   useEffect(() => {
+    let cancelled = false;
     setN(null);
     setNarrationError("");
     api
       .get(`/narrations/${id}/${lang}`)
-      .then((r) => setN(r.data.data))
-      .catch((e) =>
+      .then((r) => {
+        if (cancelled) return;
+        const narration = r.data.data;
+        if (
+          !narration?.text ||
+          (narration.language && narration.language !== lang)
+        ) {
+          setNarrationError(t.narrationUnavailable);
+          return;
+        }
+        setN(narration);
+      })
+      .catch((e) => {
+        if (cancelled) return;
         setNarrationError(
-          e.response?.data?.error?.message ||
-            (lang === "vi"
-              ? "Chưa có nội dung thuyết minh được công bố."
-              : "No published narration is available."),
-        ),
-      );
+          lang === "zh" || lang === "th"
+            ? t.narrationUnavailable
+            : e.response?.data?.error?.message || t.narrationUnavailable,
+        );
+      });
     return () => {
+      cancelled = true;
       audioRef.current?.pause();
       window.speechSynthesis?.cancel();
     };
-  }, [id, lang]);
+  }, [id, lang, t.narrationUnavailable]);
   const a = attractions.find((x) => x.id === id);
   if (!a) return <div className="empty">{t.error}</div>;
   const image = attractionImages[a.id];
   const play = async () => {
+    if (!n) return;
     if (n?.audioUrl && audioRef.current) {
       if (playing) {
         audioRef.current.pause();
@@ -617,9 +616,7 @@ function Detail({
         await audioRef.current.play();
       } catch {
         setNarrationError(
-          lang === "vi"
-            ? "Không phát được tệp audio; thử dùng giọng đọc trình duyệt."
-            : "Audio could not play; trying browser speech.",
+          t.audioFallback,
         );
         speak(a);
       }
@@ -636,17 +633,22 @@ function Detail({
       <div className="detail-layout">
         {image && (
           <figure className="detail-photo">
-            <img src={image.src} alt={image.alt} />
+                <img
+                  src={image.src}
+                  alt={localizedField(a, "name", lang) || t.unavailable}
+                />
             <figcaption>
-              {lang === "vi" ? a.name_vi : a.name_en} · Dinh Độc Lập
+              {localizedField(a, "name", lang) || t.unavailable} · Dinh Độc Lập
             </figcaption>
           </figure>
         )}
         <div className="detail-copy">
-          <p className="eyebrow">{lang === "vi" ? a.area_vi : a.area_en}</p>
-          <h1>{lang === "vi" ? a.name_vi : a.name_en}</h1>
+          <p className="eyebrow">
+            {localizedField(a, "area", lang) || t.unavailable}
+          </p>
+          <h1>{localizedField(a, "name", lang) || t.unavailable}</h1>
           <p className="lead">
-            {lang === "vi" ? a.description_vi : a.description_en}
+            {localizedField(a, "description", lang) || t.unavailable}
           </p>
       <div className="player">
         <div className="player-icon">♫</div>
@@ -654,12 +656,13 @@ function Detail({
           <strong>{t.listen}</strong>
           <span>
             {a.duration_minutes} {t.duration} ·{" "}
-            {n?.audioUrl ? "Audio file" : "Web Speech"}
+            {n?.audioUrl ? t.audioFile : t.browserSpeech}
           </span>
         </div>
         <button
           className="play"
           onClick={play}
+          disabled={!n}
           aria-label={playing ? t.stop : t.listen}
         >
           {playing ? "Ⅱ" : "▶"}
@@ -719,9 +722,11 @@ function Detail({
       <section className="detail-gallery" aria-labelledby="detail-gallery-title">
         <div className="detail-gallery-heading">
           <h2 id="detail-gallery-title">
-            {lang === "vi" ? "Địa điểm tham quan" : "Explore attractions"}
+            {t.exploreAttractions}
           </h2>
-          <span>{attractions.length} {lang === "vi" ? "điểm" : "places"}</span>
+          <span>
+            {attractions.length} {t.places}
+          </span>
         </div>
         <div className="detail-gallery-grid">
           {attractions.map((place) => {
@@ -734,13 +739,19 @@ function Detail({
                 aria-current={place.id === a.id ? "page" : undefined}
               >
                 {placeImage ? (
-                  <img src={placeImage.src} alt={placeImage.alt} loading="lazy" />
+                  <img
+                    src={placeImage.src}
+                    alt={localizedField(place, "name", lang) || t.unavailable}
+                    loading="lazy"
+                  />
                 ) : (
                   <span className="detail-gallery-placeholder" aria-hidden="true">⌖</span>
                 )}
                 <span className="detail-gallery-label">
-                  {lang === "vi" ? place.name_vi : place.name_en}
-                  <small>{lang === "vi" ? place.area_vi : place.area_en}</small>
+                  {localizedField(place, "name", lang) || t.unavailable}
+                  <small>
+                    {localizedField(place, "area", lang) || t.unavailable}
+                  </small>
                 </span>
               </Link>
             );
@@ -756,7 +767,7 @@ function MapPage({ attractions, lang, t, gps, auto, setAuto, setNotice }) {
     <section className="map-page">
       <div className="section-head">
         <div>
-          <p className="eyebrow">EXPLORE</p>
+          <p className="eyebrow">{t.exploreEyebrow}</p>
           <h1>{t.map}</h1>
         </div>
         <button
@@ -775,8 +786,8 @@ function MapPage({ attractions, lang, t, gps, auto, setAuto, setNotice }) {
             <Link className="map-row" to={`/place/${encodeURIComponent(a.id)}`} key={a.id}>
               <b>{String(i + 1).padStart(2, "0")}</b>
               <span>
-                <strong>{lang === "vi" ? a.name_vi : a.name_en}</strong>
-                <small>{lang === "vi" ? a.area_vi : a.area_en}</small>
+                <strong>{localizedField(a, "name", lang) || t.unavailable}</strong>
+                <small>{localizedField(a, "area", lang) || t.unavailable}</small>
               </span>
               <span>↗</span>
             </Link>
@@ -802,7 +813,7 @@ function MapPage({ attractions, lang, t, gps, auto, setAuto, setNotice }) {
                   icon={numberedMarkerIcon(i + 1, i % 2 === 1)}
                 >
                   <Popup>
-                    <strong>{lang === "vi" ? a.name_vi : a.name_en}</strong>
+                    <strong>{localizedField(a, "name", lang) || t.unavailable}</strong>
                     <br />
                     <Link to={`/place/${encodeURIComponent(a.id)}`}>{t.listen}</Link>
                   </Popup>
@@ -814,7 +825,7 @@ function MapPage({ attractions, lang, t, gps, auto, setAuto, setNotice }) {
       <p className="small">
         {t.gps}:{" "}
         {gps ? `${gps.lat.toFixed(4)}, ${gps.lng.toFixed(4)}` : t.gpsDenied} ·
-        GPS trong nhà có thể không chính xác.
+        {t.directionsGps}
       </p>
     </section>
   );
@@ -831,31 +842,27 @@ function Feedback({ attractions, lang, t }) {
     e.preventDefault();
     try {
       await api.post("/feedback", form);
-      setStatus(
-        lang === "vi"
-          ? "Đã gửi phản hồi. Cảm ơn bạn!"
-          : "Feedback sent. Thank you!",
-      );
+      setStatus(t.feedbackSent);
       setForm({ ...form, message: "" });
     } catch (e) {
-      setStatus(e.response?.data?.error?.message || "Không gửi được phản hồi.");
+      setStatus(e.response?.data?.error?.message || t.feedbackFailed);
     }
   };
   return (
     <section className="form-page">
-      <p className="eyebrow">YOUR VOICE MATTERS</p>
+      <p className="eyebrow">{t.feedbackEyebrow}</p>
       <h1>{t.send}</h1>
       <form onSubmit={submit} className="form-card">
         <label>
-          Điểm tham quan
+          {t.attractionField}
           <select
             value={form.attractionId}
             onChange={(e) => setForm({ ...form, attractionId: e.target.value })}
           >
-            <option value="">Không chọn</option>
+            <option value="">{t.noAttraction}</option>
             {attractions.map((a) => (
               <option key={a.id} value={a.id}>
-                {lang === "vi" ? a.name_vi : a.name_en}
+                {localizedField(a, "name", lang) || t.unavailable}
               </option>
             ))}
           </select>
@@ -906,7 +913,6 @@ function Feedback({ attractions, lang, t }) {
   );
 }
 function Admin({ t, lang }) {
-  const isVi = lang === "vi";
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
     [user, setUser] = useState(() => {
@@ -953,7 +959,7 @@ function Admin({ t, lang }) {
       description_en: "",
       attractionIds: [],
     });
-  const msg = (vi, en) => (isVi ? vi : en);
+  const msg = (vi, en) => translatePair(lang, vi, en);
   const load = async () => {
     try {
       const [a, ts, f] = await Promise.all([
@@ -974,7 +980,7 @@ function Admin({ t, lang }) {
   };
   useEffect(() => {
     if (user) load();
-  }, [user]);
+  }, [user, lang]);
   const login = async (e) => {
     e.preventDefault();
     try {
@@ -1037,14 +1043,21 @@ function Admin({ t, lang }) {
     }
   };
   const hideAttraction = async (a) => {
-    if (!window.confirm(msg(`Ẩn điểm “${a.name_vi}”?`, `Hide “${a.name_en}”?`)))
+    const name = localizedField(a, "name", lang) || a.id;
+    const confirmation =
+      lang === "zh"
+        ? `隐藏景点“${name}”？`
+        : lang === "th"
+          ? `ซ่อนสถานที่ “${name}” หรือไม่`
+          : `${msg("Ẩn điểm", "Hide")} “${name}”?`;
+    if (!window.confirm(confirmation))
       return;
     try {
       await api.delete(`/attractions/${encodeURIComponent(a.id)}`);
       setStatus(msg("Đã ẩn điểm tham quan.", "Attraction hidden."));
       await load();
     } catch (e) {
-      setError(e.response?.data?.error?.message || "Request failed");
+      setError(e.response?.data?.error?.message || t.error);
     }
   };
   const saveNarration = async (e) => {
@@ -1113,13 +1126,13 @@ function Admin({ t, lang }) {
         msg("Đã cập nhật trạng thái phản hồi.", "Feedback status updated."),
       );
     } catch (e) {
-      setError(e.response?.data?.error?.message || "Request failed");
+      setError(e.response?.data?.error?.message || t.error);
     }
   };
   if (!user)
     return (
       <section className="form-page">
-        <p className="eyebrow">CONTROL ROOM</p>
+        <p className="eyebrow">{t.controlRoomEyebrow}</p>
         <h1>{t.admin}</h1>
         <form className="form-card" onSubmit={login}>
           <h2>{t.login}</h2>
@@ -1161,7 +1174,7 @@ function Admin({ t, lang }) {
   ];
   return (
     <section className="form-page admin-page">
-      <p className="eyebrow">CONTROL ROOM</p>
+      <p className="eyebrow">{t.controlRoomEyebrow}</p>
       <div className="section-head">
         <div>
           <h1>{t.admin}</h1>
@@ -1248,7 +1261,7 @@ function Admin({ t, lang }) {
             </h2>
             <form onSubmit={saveAttraction} className="admin-form">
               <label>
-                ID (slug)
+                {t.idSlug}
                 <input
                   required
                   disabled={editing}
@@ -1330,7 +1343,7 @@ function Admin({ t, lang }) {
               </div>
               <div className="two-fields">
                 <label>
-                  Latitude
+                  {t.latitude}
                   <input
                     type="number"
                     step="any"
@@ -1341,7 +1354,7 @@ function Admin({ t, lang }) {
                   />
                 </label>
                 <label>
-                  Longitude
+                  {t.longitude}
                   <input
                     type="number"
                     step="any"
@@ -1460,7 +1473,7 @@ function Admin({ t, lang }) {
               {attractions.map((a) => (
                 <div className="admin-list-row" key={a.id}>
                   <div>
-                    <strong>{isVi ? a.name_vi : a.name_en}</strong>
+                    <strong>{localizedField(a, "name", lang) || t.unavailable}</strong>
                     <small>
                       {a.id} ·{" "}
                       {a.visible
@@ -1528,7 +1541,7 @@ function Admin({ t, lang }) {
               <option value="">—</option>
               {attractions.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.name_vi} / {a.name_en}
+                  {localizedField(a, "name", "vi")} / {localizedField(a, "name", "en")}
                 </option>
               ))}
             </select>
@@ -1688,7 +1701,7 @@ function Admin({ t, lang }) {
                           })
                         }
                       />
-                      {isVi ? a.name_vi : a.name_en}
+                      {localizedField(a, "name", lang) || t.unavailable}
                     </label>
                   ))}
               </fieldset>
@@ -1702,7 +1715,7 @@ function Admin({ t, lang }) {
             {tours.map((t) => (
               <div className="admin-list-row" key={t.id}>
                 <div>
-                  <strong>{isVi ? t.name_vi : t.name_en}</strong>
+                  <strong>{localizedField(t, "name", lang) || t.unavailable}</strong>
                   <small>
                     {t.id} · {(t.stops || []).length} {msg("điểm", "stops")}
                   </small>
@@ -1746,7 +1759,10 @@ function Admin({ t, lang }) {
                     <small>
                       {f.attraction_id ||
                         msg("Không gắn địa điểm", "No attraction")}{" "}
-                      · {new Date(f.created_at).toLocaleString()}
+                      ·{" "}
+                      {new Date(f.created_at).toLocaleString(
+                        LANGUAGES[lang].locale,
+                      )}
                     </small>
                   </div>
                   <label>
@@ -1755,9 +1771,9 @@ function Admin({ t, lang }) {
                       value={f.status}
                       onChange={(e) => updateFeedback(f.id, e.target.value)}
                     >
-                      <option value="new">new</option>
-                      <option value="reviewing">reviewing</option>
-                      <option value="resolved">resolved</option>
+                      <option value="new">{t.feedbackNew}</option>
+                      <option value="reviewing">{t.feedbackReviewing}</option>
+                      <option value="resolved">{t.feedbackResolved}</option>
                     </select>
                   </label>
                 </div>

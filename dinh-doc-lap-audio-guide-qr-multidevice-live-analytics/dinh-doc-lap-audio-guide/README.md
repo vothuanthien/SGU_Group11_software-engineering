@@ -37,14 +37,14 @@ Nếu đã chạy phiên bản cũ, volume PostgreSQL hiện hữu có thể v�
 - `GET /api/v1/health`
 - `POST /api/v1/auth/login` `{ "email":"<ADMIN_EMAIL>", "password":"<ADMIN_PASSWORD>" }` (giá trị cấu hình trong `.env`)
 - `GET /api/v1/attractions`, `GET /api/v1/attractions/:id`, `GET /api/v1/tours`
-- `GET /api/v1/narrations/:attractionId/:language` (`vi` hoặc `en`)
+- `GET /api/v1/narrations/:attractionId/:language` (`vi`, `en`, `zh` hoặc `th`)
 - `POST /api/v1/analytics/events` ghi sự kiện tham quan/thuyết minh không chứa danh tính thật.
 - `GET /api/v1/analytics/summary?days=30` tổng hợp số liệu (JWT admin; `days` từ 1 đến 90).
 - `POST /api/v1/feedback` `{ "attractionId":"independence-palace", "rating":5, "message":"...", "type":"review" }`
 - `GET /api/v1/feedback` (JWT admin); `PATCH /api/v1/feedback/:id/status` (JWT admin)
 - `GET /api/v1/attractions/admin/all` (JWT admin); `POST /api/v1/attractions`, `PUT /api/v1/attractions/:id`, `DELETE /api/v1/attractions/:id` (ẩn mềm, JWT admin)
 - `POST /api/v1/tours`, `PUT /api/v1/tours/:id` (JWT admin; quản lý lộ trình)
-- `PUT /api/v1/narrations/:id` (JWT admin; cập nhật kịch bản song ngữ và trạng thái công bố)
+- `PUT /api/v1/narrations/:id` (JWT admin; cập nhật kịch bản vi/en/zh/th, audio URLs và trạng thái công bố)
 
 Phản hồi API dùng JSON; admin endpoint được kiểm tra JWT và role ở service. Chi tiết thêm xem `docs/api.md`.
 
