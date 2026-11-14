@@ -13,6 +13,12 @@ import api from "./api.js";
 import { trackEvent } from "./analytics.js";
 import AnalyticsDashboard from "./components/AnalyticsDashboard.jsx";
 import QrCodeManager from "./components/QrCodeManager.jsx";
+import usePersistentState from "./hooks/usePersistentState.js";
+
+const parseVisited = (raw) => {
+  const value = JSON.parse(raw);
+  return Array.isArray(value) ? value.filter((id) => typeof id === "string") : [];
+};
 const words = {
   vi: {
     home: "Khám phá Dinh Độc Lập",
@@ -119,13 +125,16 @@ const numberedMarkerIcon = (number, gold = false) =>
   });
 function App() {
   const location = useLocation();
-  const [lang, setLang] = useState(localStorage.getItem("dinh_lang") || "vi");
+  const [lang, setLang] = usePersistentState("dinh_lang", "vi", {
+    parse: (raw) => (raw === "en" ? "en" : "vi"),
+  });
   const [attractions, setAttractions] = useState([]);
   const [tours, setTours] = useState([]);
   const [error, setError] = useState("");
-  const [visited, setVisited] = useState(() =>
-    JSON.parse(localStorage.getItem("dinh_visited") || "[]"),
-  );
+  const [visited, setVisited] = usePersistentState("dinh_visited", [], {
+    parse: parseVisited,
+    serialize: JSON.stringify,
+  });
   const [auto, setAuto] = useState(false);
   const [gps, setGps] = useState(null);
   const [notice, setNotice] = useState("");
@@ -134,12 +143,6 @@ function App() {
   const spoken = useRef(new Set());
   const trackedLocationRef = useRef("");
   const t = words[lang];
-  useEffect(() => {
-    localStorage.setItem("dinh_lang", lang);
-  }, [lang]);
-  useEffect(() => {
-    localStorage.setItem("dinh_visited", JSON.stringify(visited));
-  }, [visited]);
   useEffect(() => {
     try {
       if (sessionStorage.getItem("dinh_app_opened")) return;
