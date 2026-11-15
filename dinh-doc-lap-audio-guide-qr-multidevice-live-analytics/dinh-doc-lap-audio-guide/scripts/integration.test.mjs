@@ -9,8 +9,11 @@ if (!adminEmail || !adminPassword) {
   throw new Error("TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD must be configured");
 }
 
-async function request(path, { method = "GET", body, rawBody, token } = {}) {
-  const headers = {};
+async function request(
+  path,
+  { method = "GET", body, rawBody, token, headers = {} } = {},
+) {
+  headers = { ...headers };
   let requestBody;
   if (body !== undefined) {
     headers["content-type"] = "application/json";
@@ -67,6 +70,21 @@ test(
     const narrationResponse = await request("/narrations/main-building/vi");
     assert.equal(narrationResponse.status, 200);
     assert.ok((await narrationResponse.json()).data.text.length > 0);
+
+    for (const language of ["en", "zh", "th"]) {
+      const localizedNarrationResponse = await request(
+        `/narrations/main-building/${language}`,
+        { headers: { "Accept-Language": language } },
+      );
+      assert.equal(localizedNarrationResponse.status, 200);
+      const localizedNarration = (await localizedNarrationResponse.json()).data;
+      assert.equal(localizedNarration.language, language);
+      assert.ok(localizedNarration.text.length > 0);
+      assert.equal(localizedNarration.audioUrl, null);
+      assert.equal(localizedNarration.audioMode, "web-speech-fallback");
+      if (language === "zh" || language === "th")
+        assert.equal(localizedNarration.translationStatus, "draft");
+    }
 
     await assertApiError(
       await request("/narrations/main-building/fr"),
@@ -146,7 +164,7 @@ test(
       body: {
         visitorId: "a1c2e3f4-1234-4123-8123-aabbccddeeff",
         eventType: "app_opened",
-        language: "vi",
+        language: "zh",
       },
     });
     assert.equal(analyticsEventResponse.status, 201);
@@ -169,6 +187,8 @@ test(
       body: {
         narration_vi: narration.narration_vi,
         narration_en: narration.narration_en,
+        narration_zh: narration.narration_zh,
+        narration_th: narration.narration_th,
       },
     });
     assert.equal(updateResponse.status, 200);
@@ -182,5 +202,41 @@ test(
       (await persistedNarrationResponse.json()).data.text,
       narration.narration_vi,
     );
+    for (const language of ["zh", "th"]) {
+      const response = await request(`/narrations/main-building/${language}`);
+      assert.equal(response.status, 200);
+      assert.equal(
+        (await response.json()).data.text,
+        narration[`narration_${language}`],
+      );
+    }
+
+    const clearThaiResponse = await request("/narrations/main-building", {
+      method: "PUT",
+      token,
+      body: {
+        narration_vi: narration.narration_vi,
+        narration_en: narration.narration_en,
+        narration_zh: narration.narration_zh,
+        narration_th: "",
+      },
+    });
+    assert.equal(clearThaiResponse.status, 200);
+    await assertApiError(
+      await request("/narrations/main-building/th"),
+      404,
+      "TRANSLATION_UNAVAILABLE",
+    );
+    const restoreThaiResponse = await request("/narrations/main-building", {
+      method: "PUT",
+      token,
+      body: {
+        narration_vi: narration.narration_vi,
+        narration_en: narration.narration_en,
+        narration_zh: narration.narration_zh,
+        narration_th: narration.narration_th,
+      },
+    });
+    assert.equal(restoreThaiResponse.status, 200);
   },
 );

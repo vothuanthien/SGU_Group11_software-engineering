@@ -28,6 +28,8 @@ export default function AdminPage({ t, lang }) {
     description_en: "",
     narration_vi: "",
     narration_en: "",
+    narration_zh: "",
+    narration_th: "",
     area_vi: "",
     area_en: "",
     latitude: "",
@@ -40,6 +42,8 @@ export default function AdminPage({ t, lang }) {
     narration_published: true,
     audio_vi: "",
     audio_en: "",
+    audio_zh: "",
+    audio_th: "",
   };
   const [draft, setDraft] = useState(empty),
     [editing, setEditing] = useState(false),
@@ -151,12 +155,16 @@ export default function AdminPage({ t, lang }) {
       await api.put(`/narrations/${encodeURIComponent(draft.id)}`, {
         narration_vi: draft.narration_vi,
         narration_en: draft.narration_en,
+        narration_zh: draft.narration_zh || "",
+        narration_th: draft.narration_th || "",
         narration_published: !!draft.narration_published,
         audio_vi: draft.audio_vi || "",
         audio_en: draft.audio_en || "",
+        audio_zh: draft.audio_zh || "",
+        audio_th: draft.audio_th || "",
       });
       setStatus(
-        msg("Đã cập nhật kịch bản song ngữ.", "Bilingual narration updated."),
+        msg("Đã cập nhật kịch bản đa ngôn ngữ.", "Multilingual narration updated."),
       );
       await load();
     } catch (e) {
@@ -592,7 +600,7 @@ export default function AdminPage({ t, lang }) {
       {tab === "narration" && (
         <div className="form-card">
           <h2>
-            {msg("Quản lý kịch bản song ngữ", "Manage bilingual narration")}
+            {msg("Quản lý kịch bản đa ngôn ngữ", "Manage multilingual narration")}
           </h2>
           <label>
             {msg("Chọn điểm tham quan", "Choose attraction")}
@@ -613,11 +621,19 @@ export default function AdminPage({ t, lang }) {
                     );
                     setDraft((v) => ({
                       ...v,
+                      narration_zh: r.data.data.narration_zh || "",
+                      narration_th: r.data.data.narration_th || "",
                       audio_vi:
                         r.data.data.audio?.find((x) => x.language === "vi")
                           ?.audio_url || "",
                       audio_en:
                         r.data.data.audio?.find((x) => x.language === "en")
+                          ?.audio_url || "",
+                      audio_zh:
+                        r.data.data.audio?.find((x) => x.language === "zh")
+                          ?.audio_url || "",
+                      audio_th:
+                        r.data.data.audio?.find((x) => x.language === "th")
                           ?.audio_url || "",
                     }));
                   } catch {}
@@ -656,6 +672,26 @@ export default function AdminPage({ t, lang }) {
                   }
                 />
               </label>
+              <label>
+                Kịch bản tiếng Trung giản thể (Chinese narration)
+                <textarea
+                  rows="8"
+                  value={draft.narration_zh || ""}
+                  onChange={(e) =>
+                    setDraft({ ...draft, narration_zh: e.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Kịch bản tiếng Thái (Thai narration)
+                <textarea
+                  rows="8"
+                  value={draft.narration_th || ""}
+                  onChange={(e) =>
+                    setDraft({ ...draft, narration_th: e.target.value })
+                  }
+                />
+              </label>
               <div className="two-fields">
                 <label>
                   {msg("URL audio tiếng Việt", "Vietnamese audio URL")}
@@ -677,6 +713,28 @@ export default function AdminPage({ t, lang }) {
                       setDraft({ ...draft, audio_en: e.target.value })
                     }
                     placeholder="https://.../en.mp3"
+                  />
+                </label>
+                <label>
+                  URL audio tiếng Trung (Chinese audio URL)
+                  <input
+                    type="url"
+                    value={draft.audio_zh || ""}
+                    onChange={(e) =>
+                      setDraft({ ...draft, audio_zh: e.target.value })
+                    }
+                    placeholder="https://.../zh.mp3"
+                  />
+                </label>
+                <label>
+                  URL audio tiếng Thái (Thai audio URL)
+                  <input
+                    type="url"
+                    value={draft.audio_th || ""}
+                    onChange={(e) =>
+                      setDraft({ ...draft, audio_th: e.target.value })
+                    }
+                    placeholder="https://.../th.mp3"
                   />
                 </label>
               </div>
