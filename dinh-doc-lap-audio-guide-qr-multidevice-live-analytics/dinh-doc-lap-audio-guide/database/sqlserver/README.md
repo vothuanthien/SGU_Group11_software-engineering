@@ -7,8 +7,7 @@ PostgreSQL remains the application's source of truth. The optional `sqlserver-sy
 1. Enable TCP/IP and SQL authentication in SQL Server Configuration Manager, then restart SQL Server.
 2. Open `01_create_schema.sql` in SQL Server Management Studio and execute it against the target database.
 3. Optionally execute `02_seed_data.sql` for standalone sample data.
-4. Execute `04_multilingual_narration.sql` to add Chinese and Thai narration and widen language constraints. It is safe to rerun.
-5. Use `03_sample_queries.sql` to demonstrate the mirrored tables.
+4. Use `03_sample_queries.sql` to demonstrate the mirrored tables.
 
 ## Configure the sync service
 

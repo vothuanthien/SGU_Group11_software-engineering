@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { localizedField, translatePair } from "../i18n.js";
 
 const QR_BASE_URL_KEY = "dinh_qr_base_url";
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
@@ -43,7 +42,8 @@ export function buildQrTargetUrl(normalizedBase, destination, selectedId) {
 }
 
 export default function QrCodeManager({ attractions = [], lang = "vi" }) {
-  const msg = (vi, en) => translatePair(lang, vi, en);
+  const isVi = lang === "vi";
+  const msg = (vi, en) => (isVi ? vi : en);
   const [destination, setDestination] = useState("home");
   const [selectedId, setSelectedId] = useState(attractions[0]?.id || "");
   const [baseUrl, setBaseUrl] = useState(initialBaseUrl);
@@ -102,9 +102,7 @@ export default function QrCodeManager({ attractions = [], lang = "vi" }) {
 
   return (
     <section className="form-page qr-manager">
-      <p className="eyebrow">
-        {msg("QUÉT ĐỂ KHÁM PHÁ", "SCAN TO EXPLORE")}
-      </p>
+      <p className="eyebrow">SCAN TO EXPLORE</p>
       <h2>{msg("Quản lý mã QR", "QR codes")}</h2>
       <p className="small">
         {msg(
@@ -139,8 +137,7 @@ export default function QrCodeManager({ attractions = [], lang = "vi" }) {
                   .filter((item) => item.visible !== false)
                   .map((item) => (
                     <option key={item.id} value={item.id}>
-                      {localizedField(item, "name", lang) ||
-                        msg("Chưa có nội dung bằng ngôn ngữ này", "Content is not available in this language.")}
+                      {isVi ? item.name_vi : item.name_en}
                     </option>
                   ))}
               </select>
@@ -157,15 +154,7 @@ export default function QrCodeManager({ attractions = [], lang = "vi" }) {
               required
               value={baseUrl}
               onChange={(event) => setBaseUrl(event.target.value)}
-              placeholder={
-                lang === "vi"
-                  ? "http://192.168.1.20:8080 hoặc https://ten-mien-cua-ban.vn"
-                  : lang === "zh"
-                    ? "http://192.168.1.20:8080 或 https://your-domain.example"
-                    : lang === "th"
-                      ? "http://192.168.1.20:8080 หรือ https://your-domain.example"
-                      : "http://192.168.1.20:8080 or https://your-domain.example"
-              }
+              placeholder="http://192.168.1.20:8080 hoặc https://ten-mien-cua-ban.vn"
               aria-describedby="qr-url-help"
             />
           </label>
@@ -260,15 +249,18 @@ export default function QrCodeManager({ attractions = [], lang = "vi" }) {
                   title={
                     destination === "home"
                       ? msg("Mã QR trang chủ", "Home page QR code")
-                      : `${msg("Mã QR", "QR code")}: ${localizedField(selected, "name", lang) || msg("Chưa có nội dung bằng ngôn ngữ này", "Content is not available in this language.")}`
+                      : isVi
+                        ? `Mã QR ${selected?.name_vi}`
+                        : `QR code for ${selected?.name_en}`
                   }
                 />
               </div>
               <h3>
                 {destination === "home"
                   ? msg("Trang chủ", "Home page")
-                  : localizedField(selected, "name", lang) ||
-                    msg("Chưa có nội dung bằng ngôn ngữ này", "Content is not available in this language.")}
+                  : isVi
+                    ? selected?.name_vi
+                    : selected?.name_en}
               </h3>
               <p className="small">
                 {msg(

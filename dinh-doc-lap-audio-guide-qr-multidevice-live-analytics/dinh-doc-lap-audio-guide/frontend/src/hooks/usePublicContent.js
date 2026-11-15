@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import api from "../api.js";
-import { words } from "../i18n.js";
 
 /** Load the visitor-facing attraction catalogue and tours. */
 export default function usePublicContent(lang) {
@@ -19,11 +18,13 @@ export default function usePublicContent(lang) {
       })
       .catch(() => {
         if (cancelled) return;
-        setError(words[lang].error);
+        setError(
+          lang === "vi"
+            ? "Không tải được dữ liệu. Hãy thử tải lại."
+            : "Could not load data. Please try again.",
+        );
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [lang]);
 
   return { attractions, tours, error };

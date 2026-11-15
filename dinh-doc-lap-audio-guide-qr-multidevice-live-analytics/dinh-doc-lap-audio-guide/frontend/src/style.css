@@ -60,6 +60,7 @@ nav {
 nav a:hover {
   color: #bb8a3d;
 }
+.language,
 .secondary {
   border: 1px solid #d7d9ce;
   border-radius: 30px;
@@ -67,96 +68,8 @@ nav a:hover {
   background: transparent;
   color: #254638;
 }
-.language-switcher {
-  position: relative;
-  flex: 0 0 auto;
-  color: #254638;
-  z-index: 20;
-}
 .language {
-  min-height: 44px;
-  min-width: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 13px;
-  border: 1px solid #d7d9ce;
-  border-radius: 24px;
-  background: #fffefa;
-  color: #254638;
-  font-size: 14px;
-  font-weight: 600;
-}
-.language:hover {
-  border-color: #1c4939;
-  background: #f0f3ed;
-}
-.language:focus-visible,
-.language-option:focus-visible {
-  outline: 3px solid #d3a75f;
-  outline-offset: 2px;
-}
-.language:active {
-  background: #e7ece5;
-}
-.language-globe,
-.language-chevron {
-  width: 18px;
-  height: 18px;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.language-chevron {
-  width: 14px;
-  height: 14px;
-  transition: transform 0.2s ease;
-}
-.language-chevron.is-open {
-  transform: rotate(180deg);
-}
-.language-code,
-.language-option-code {
-  color: #748077;
-  font-size: 11px;
-  font-weight: 500;
-}
-.language-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: max-content;
-  min-width: 210px;
-  padding: 6px;
-  border: 1px solid #e1e3d9;
-  border-radius: 12px;
-  background: #fffefa;
-  box-shadow: 0 12px 30px #1e30291c;
-}
-.language-option {
-  width: 100%;
-  min-height: 44px;
-  display: grid;
-  grid-template-columns: 1fr auto 16px;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: #254638;
-  text-align: left;
-  font-size: 14px;
-}
-.language-option:hover {
-  background: #f0f3ed;
-}
-.language-option.is-selected {
-  background: #e8eee8;
-  color: #173f35;
-  font-weight: 700;
+  font-size: 12px;
 }
 main {
   max-width: 1440px;
@@ -760,9 +673,6 @@ footer {
     flex-wrap: wrap;
     gap: 12px;
   }
-  nav .language-switcher {
-    margin-left: auto;
-  }
   nav a {
     font-size: 12px;
   }
@@ -1019,12 +929,6 @@ footer {
   }
 }
 @media (max-width: 560px) {
-  .language-name {
-    max-width: 82px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
   .two-fields {
     grid-template-columns: 1fr;
   }

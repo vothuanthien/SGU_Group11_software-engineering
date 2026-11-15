@@ -3,7 +3,6 @@ import { Link, useParams } from "react-router-dom";
 import api from "../api.js";
 import { trackEvent } from "../analytics.js";
 import { attractionImages } from "../constants/appContent.js";
-import { localizedField, words } from "../i18n.js";
 
 function Detail({
   id,
@@ -27,12 +26,10 @@ function Detail({
       .then((r) => setN(r.data.data))
       .catch((e) =>
         setNarrationError(
-          e.response?.data?.error?.code === "TRANSLATION_UNAVAILABLE"
-            ? words[lang].narrationUnavailable
-            : e.response?.data?.error?.message ||
-              (lang === "vi"
-                ? "Chưa có nội dung thuyết minh được công bố."
-                : "No published narration is available."),
+          e.response?.data?.error?.message ||
+            (lang === "vi"
+              ? "Chưa có nội dung thuyết minh được công bố."
+              : "No published narration is available."),
         ),
       );
     return () => {
@@ -43,10 +40,6 @@ function Detail({
   const a = attractions.find((x) => x.id === id);
   if (!a) return <div className="empty">{t.error}</div>;
   const image = attractionImages[a.id];
-  const name = localizedField(a, "name", lang) || t.unavailable;
-  const area = localizedField(a, "area", lang) || t.unavailable;
-  const description =
-    localizedField(a, "description", lang) || t.unavailable;
   const play = async () => {
     if (n?.audioUrl && audioRef.current) {
       if (playing) {
@@ -78,14 +71,16 @@ function Detail({
           <figure className="detail-photo">
             <img src={image.src} alt={image.alt} />
             <figcaption>
-              {name} · Dinh Độc Lập
+              {lang === "vi" ? a.name_vi : a.name_en} · Dinh Độc Lập
             </figcaption>
           </figure>
         )}
         <div className="detail-copy">
-          <p className="eyebrow">{area}</p>
-          <h1>{name}</h1>
-          <p className="lead">{description}</p>
+          <p className="eyebrow">{lang === "vi" ? a.area_vi : a.area_en}</p>
+          <h1>{lang === "vi" ? a.name_vi : a.name_en}</h1>
+          <p className="lead">
+            {lang === "vi" ? a.description_vi : a.description_en}
+          </p>
       <div className="player">
         <div className="player-icon">♫</div>
         <div className="player-info">
@@ -132,11 +127,6 @@ function Detail({
       )}
       <h2>{t.text}</h2>
       <p className="narration">{n?.text || narrationError}</p>
-      {n?.translationStatus === "draft" && (
-        <p className="small" role="note">
-          {words[lang].translatedNarrationNotice}
-        </p>
-      )}
       {narrationError && (
         <p className="small" role="status">
           {narrationError}
@@ -188,10 +178,8 @@ function Detail({
                   <span className="detail-gallery-placeholder" aria-hidden="true">⌖</span>
                 )}
                 <span className="detail-gallery-label">
-                  {localizedField(place, "name", lang) || t.unavailable}
-                  <small>
-                    {localizedField(place, "area", lang) || t.unavailable}
-                  </small>
+                  {lang === "vi" ? place.name_vi : place.name_en}
+                  <small>{lang === "vi" ? place.area_vi : place.area_en}</small>
                 </span>
               </Link>
             );

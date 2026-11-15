@@ -20,7 +20,7 @@ Lệnh `--force-recreate` thay thế container nhưng vẫn giữ named volume d
 ### Nếu điện thoại không mở được URL LAN
 
 - Kiểm tra IP bằng `ipconfig` lại vì IP có thể thay đổi khi đổi Wi-Fi/router.
-- Xác nhận ứng dụng đang chạy và `docker compose ps` cho thấy `frontend`, `api-gateway`, `analytics-service`, `postgres` đang hoạt động; `analytics-migration` ở trạng thái `Exited (0)` là bình thường sau khi migration xong.
+- Xác nhận ứng dụng đang chạy và `docker compose ps` cho thấy `frontend`, `api-gateway`, `analytics-service`, `postgres` đang hoạt động; `database-migration` ở trạng thái `Exited (0)` là bình thường sau khi migration xong.
 - Cho phép Windows Defender Firewall nhận kết nối trên **Private network** cho Docker Desktop/port TCP 8080 nếu Windows đang chặn. Không tắt firewall hoàn toàn.
 - Tắt VPN trên một trong hai thiết bị nếu VPN cô lập kết nối LAN, và đảm bảo router không bật AP/client isolation cho các thiết bị cùng Wi-Fi.
 - Không mở port 8080 trên router Internet để kiểm thử nội bộ.

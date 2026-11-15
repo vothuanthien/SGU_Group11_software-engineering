@@ -38,8 +38,6 @@ BEGIN
         description_en NVARCHAR(MAX) NOT NULL,
         narration_vi NVARCHAR(MAX) NOT NULL,
         narration_en NVARCHAR(MAX) NOT NULL,
-        narration_zh NVARCHAR(MAX) NULL,
-        narration_th NVARCHAR(MAX) NULL,
         area_vi NVARCHAR(200) NOT NULL CONSTRAINT DF_attractions_area_vi DEFAULT N'Khuôn viên',
         area_en NVARCHAR(200) NOT NULL CONSTRAINT DF_attractions_area_en DEFAULT N'Grounds',
         latitude FLOAT NULL,
@@ -116,7 +114,7 @@ BEGIN
         CONSTRAINT PK_narration_assets PRIMARY KEY (id),
         CONSTRAINT FK_narration_assets_attractions FOREIGN KEY (attraction_id) REFERENCES dbo.attractions(id) ON DELETE CASCADE,
         CONSTRAINT UQ_narration_assets_attraction_language UNIQUE (attraction_id, language),
-        CONSTRAINT CK_narration_assets_language CHECK (language IN (N'vi', N'en', N'zh', N'th'))
+        CONSTRAINT CK_narration_assets_language CHECK (language IN (N'vi', N'en'))
     );
 END;
 GO
@@ -134,7 +132,7 @@ BEGIN
         CONSTRAINT PK_visitor_events PRIMARY KEY (id),
         CONSTRAINT FK_visitor_events_attractions FOREIGN KEY (attraction_id) REFERENCES dbo.attractions(id) ON DELETE CASCADE,
         CONSTRAINT CK_visitor_events_type CHECK (event_type IN (N'app_opened', N'qr_scan', N'place_opened', N'visit_marked', N'narration_started', N'narration_completed')),
-        CONSTRAINT CK_visitor_events_language CHECK (language IN (N'vi', N'en', N'zh', N'th')),
+        CONSTRAINT CK_visitor_events_language CHECK (language IN (N'vi', N'en')),
         CONSTRAINT CK_visitor_events_metadata_json CHECK (ISJSON(metadata) = 1)
     );
     CREATE INDEX IX_visitor_events_created_at ON dbo.visitor_events(created_at DESC);

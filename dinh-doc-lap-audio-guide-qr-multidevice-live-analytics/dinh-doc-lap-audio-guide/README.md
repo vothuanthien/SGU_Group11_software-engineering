@@ -8,7 +8,7 @@ MVP chạy bằng Docker Compose: React/Vite, API Gateway, 5 backend service ngh
 2. Sao chép `.env.example` thành `.env`; đặt `POSTGRES_PASSWORD` và `JWT_SECRET` thành giá trị ngẫu nhiên riêng (JWT tối thiểu 32 ký tự; mật khẩu DB nên dùng ký tự URL-safe). Đặt `ADMIN_EMAIL` và `ADMIN_PASSWORD` (tối thiểu 12 ký tự) để tạo tài khoản quản trị ban đầu; nếu bỏ trống thì không tạo admin.
 3. Chạy `docker compose up --build` tại thư mục dự án.
 4. Mở frontend tại http://localhost:8080; API health tại http://localhost:8080/api/v1/health.
-Compose tự khởi tạo schema và dữ liệu mẫu khi PostgreSQL tạo volume lần đầu; dịch vụ `analytics-migration` áp dụng migration để hỗ trợ cả volume cũ. Khi cập nhật ZIP có thay đổi migration, chạy `docker compose up --build --force-recreate -d` để chắc chắn container migration chạy lại; lệnh này không xóa volume dữ liệu. Nếu cần reset toàn bộ dữ liệu demo: `docker compose down -v` rồi `docker compose up --build`.
+Compose tự khởi tạo schema và dữ liệu mẫu khi PostgreSQL tạo volume lần đầu; dịch vụ `database-migration` áp dụng migration để hỗ trợ cả volume cũ. Khi cập nhật ZIP có thay đổi migration, chạy `docker compose up --build --force-recreate -d` để chắc chắn container migration chạy lại; lệnh này không xóa volume dữ liệu. Nếu cần reset toàn bộ dữ liệu demo: `docker compose down -v` rồi `docker compose up --build`.
 
 Nếu đã chạy phiên bản cũ, volume PostgreSQL hiện hữu có thể vẫn chứa tài khoản demo được tạo trước đây; hãy đổi hoặc xóa tài khoản đó sau khi sao lưu DB. Thay đổi này không tự sửa thông tin đăng nhập trong volume cũ.
 
@@ -19,7 +19,7 @@ Nếu đã chạy phiên bản cũ, volume PostgreSQL hiện hữu có thể v�
 - Để thử quét bằng nhiều điện thoại: tất cả thiết bị phải cùng Wi-Fi với máy tính chạy Docker; máy tính phải bật và ứng dụng đang chạy. Quét bằng camera mặc định của điện thoại và mở liên kết. Nếu không truy cập được, kiểm tra Windows Defender Firewall cho phép truy cập mạng Private vào Docker/port 8080. Không cần và không nên mở port trên router Internet chỉ để thử LAN.
 - Để khách sử dụng ở địa điểm tham quan qua mạng di động hoặc Wi-Fi khác, cần triển khai ứng dụng lên máy chủ/domain công khai có HTTPS, sau đó nhập domain đó khi tạo QR. Mã QR không thể làm địa chỉ `localhost` hay IP nội bộ truy cập được từ Internet.
 - Khách không cần tạo tài khoản để xem/nghe. Hệ thống ghi nhận sự kiện `app_opened`, `qr_scan` (khi link QR được mở), `place_opened`, `narration_started`, `narration_completed` và `visit_marked`. Dashboard tự đọc lại số liệu từ PostgreSQL mỗi 5 giây khi đang mở. Khi nhiều điện thoại quét cùng mã, mỗi trình duyệt có UUID ẩn danh riêng và mỗi sự kiện được ghi thành dòng riêng.
-- “Khách ẩn danh” là trình duyệt/thiết bị được nhận diện bằng UUID trong localStorage, không phải danh tính thật hay số người được xác minh. Nếu đổi thiết bị/trình duyệt hoặc xóa storage, một người có thể được tính là khách mới. Lượt QR được đếm khi liên kết gắn `source=qr` được mở; việc chỉ mở camera xem QR mà không bấm vào liên kết không thể được web app phát hiện. “Đã tham quan” là thao tác khách chủ động bấm nút đánh dấu. Container `analytics-migration` thoát với mã 0 sau khi migration chạy thành công là bình thường.
+- “Khách ẩn danh” là trình duyệt/thiết bị được nhận diện bằng UUID trong localStorage, không phải danh tính thật hay số người được xác minh. Nếu đổi thiết bị/trình duyệt hoặc xóa storage, một người có thể được tính là khách mới. Lượt QR được đếm khi liên kết gắn `source=qr` được mở; việc chỉ mở camera xem QR mà không bấm vào liên kết không thể được web app phát hiện. “Đã tham quan” là thao tác khách chủ động bấm nút đánh dấu. Container `database-migration` thoát với mã 0 sau khi migration chạy thành công là bình thường.
 
 ## Các thành phần
 
@@ -37,14 +37,14 @@ Nếu đã chạy phiên bản cũ, volume PostgreSQL hiện hữu có thể v�
 - `GET /api/v1/health`
 - `POST /api/v1/auth/login` `{ "email":"<ADMIN_EMAIL>", "password":"<ADMIN_PASSWORD>" }` (giá trị cấu hình trong `.env`)
 - `GET /api/v1/attractions`, `GET /api/v1/attractions/:id`, `GET /api/v1/tours`
-- `GET /api/v1/narrations/:attractionId/:language` (`vi`, `en`, `zh` hoặc `th`)
+- `GET /api/v1/narrations/:attractionId/:language` (`vi` hoặc `en`)
 - `POST /api/v1/analytics/events` ghi sự kiện tham quan/thuyết minh không chứa danh tính thật.
 - `GET /api/v1/analytics/summary?days=30` tổng hợp số liệu (JWT admin; `days` từ 1 đến 90).
 - `POST /api/v1/feedback` `{ "attractionId":"independence-palace", "rating":5, "message":"...", "type":"review" }`
 - `GET /api/v1/feedback` (JWT admin); `PATCH /api/v1/feedback/:id/status` (JWT admin)
 - `GET /api/v1/attractions/admin/all` (JWT admin); `POST /api/v1/attractions`, `PUT /api/v1/attractions/:id`, `DELETE /api/v1/attractions/:id` (ẩn mềm, JWT admin)
 - `POST /api/v1/tours`, `PUT /api/v1/tours/:id` (JWT admin; quản lý lộ trình)
-- `PUT /api/v1/narrations/:id` (JWT admin; cập nhật kịch bản vi/en/zh/th, audio URLs và trạng thái công bố)
+- `PUT /api/v1/narrations/:id` (JWT admin; cập nhật kịch bản song ngữ và trạng thái công bố)
 
 Phản hồi API dùng JSON; admin endpoint được kiểm tra JWT và role ở service. Chi tiết thêm xem `docs/api.md`.
 

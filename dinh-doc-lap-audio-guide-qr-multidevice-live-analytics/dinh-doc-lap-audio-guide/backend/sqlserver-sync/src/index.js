@@ -51,7 +51,6 @@ async function upsertAttraction(tx, row) {
     id: row.id, name_vi: row.name_vi, name_en: row.name_en,
     description_vi: row.description_vi, description_en: row.description_en,
     narration_vi: row.narration_vi, narration_en: row.narration_en,
-    narration_zh: row.narration_zh, narration_th: row.narration_th,
     area_vi: row.area_vi, area_en: row.area_en, latitude: row.latitude,
     longitude: row.longitude, sort_order: row.sort_order,
     duration_minutes: row.duration_minutes, image_url: row.image_url,
@@ -61,7 +60,6 @@ async function upsertAttraction(tx, row) {
   const specs = {
     id: nv(100), name_vi: nv(300), name_en: nv(300),
     description_vi: nv(), description_en: nv(), narration_vi: nv(), narration_en: nv(),
-    narration_zh: nv(), narration_th: nv(),
     area_vi: nv(200), area_en: nv(200), latitude: sql.Float, longitude: sql.Float,
     sort_order: sql.Int, duration_minutes: sql.Int, image_url: nv(2048), source_url: nv(2048),
     visible: sql.Bit, narration_published: sql.Bit, created_at: sql.DateTime2(3),
@@ -72,17 +70,16 @@ async function upsertAttraction(tx, row) {
       UPDATE dbo.attractions SET name_vi=@name_vi,name_en=@name_en,
         description_vi=@description_vi,description_en=@description_en,
         narration_vi=@narration_vi,narration_en=@narration_en,
-        narration_zh=@narration_zh,narration_th=@narration_th,
         area_vi=@area_vi,area_en=@area_en,latitude=@latitude,longitude=@longitude,
         sort_order=@sort_order,duration_minutes=@duration_minutes,image_url=@image_url,
         source_url=@source_url,visible=@visible,narration_published=@narration_published,
         created_at=@created_at WHERE id=@id;
     ELSE
       INSERT INTO dbo.attractions(id,name_vi,name_en,description_vi,description_en,
-        narration_vi,narration_en,narration_zh,narration_th,area_vi,area_en,latitude,longitude,sort_order,
+        narration_vi,narration_en,area_vi,area_en,latitude,longitude,sort_order,
         duration_minutes,image_url,source_url,visible,narration_published,created_at)
       VALUES(@id,@name_vi,@name_en,@description_vi,@description_en,@narration_vi,
-        @narration_en,@narration_zh,@narration_th,@area_vi,@area_en,@latitude,@longitude,@sort_order,
+        @narration_en,@area_vi,@area_en,@latitude,@longitude,@sort_order,
         @duration_minutes,@image_url,@source_url,@visible,@narration_published,@created_at);
   `);
 }

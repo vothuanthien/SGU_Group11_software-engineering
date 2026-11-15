@@ -10,7 +10,7 @@ Base URL local: `http://localhost:4000/api/v1` (hoặc qua frontend `/api/v1`).
 | GET    | `/attractions`               | Danh sách địa điểm                                                                                                      |
 | GET    | `/attractions/:id`           | Chi tiết địa điểm                                                                                                       |
 | GET    | `/tours`                     | Lộ trình và các điểm                                                                                                    |
-| GET    | `/narrations/:id/:language`  | Nội dung thuyết minh vi/en/zh/th; bản dịch zh/th được đánh dấu `translationStatus: "draft"`                            |
+| GET    | `/narrations/:id/:language`  | Nội dung thuyết minh vi/en; xác minh điểm qua Attraction Service                                                        |
 | POST   | `/feedback`                  | Gửi phản hồi; rating 1–5, message tối đa 1000 ký tự                                                                     |
 | GET    | `/feedback`                  | Danh sách phản hồi, admin JWT                                                                                           |
 | PATCH  | `/feedback/:id/status`       | Cập nhật trạng thái, admin JWT                                                                                          |
@@ -21,7 +21,7 @@ Base URL local: `http://localhost:4000/api/v1` (hoặc qua frontend `/api/v1`).
 | POST   | `/tours`                     | Tạo lộ trình với danh sách attractionIds, admin JWT                                                                     |
 | PUT    | `/tours/:id`                 | Cập nhật lộ trình và thứ tự điểm, admin JWT                                                                             |
 | GET    | `/narrations/admin/:id`      | Kịch bản và audio URLs, admin JWT                                                                                       |
-| PUT    | `/narrations/:id`            | Cập nhật kịch bản VI/EN/ZH/TH, audio URLs và trạng thái công bố, admin JWT                                              |
+| PUT    | `/narrations/:id`            | Cập nhật kịch bản VI/EN, audio URLs và trạng thái công bố, admin JWT                                                    |
 | POST   | `/analytics/events`          | Ghi sự kiện ẩn danh `app_opened`, `qr_scan`, `place_opened`, `visit_marked`, `narration_started`, `narration_completed` |
 | GET    | `/analytics/summary?days=30` | KPI, ngôn ngữ được nghe, địa điểm hoạt động và lịch sử khách ẩn danh; admin JWT; 1–90 ngày                              |
 
@@ -34,8 +34,6 @@ Ví dụ đăng nhập:
 Set these values in the ignored `.env` file before starting the services. The admin account is created only when both values are configured.
 
 Response thành công có dạng `{"data":{"token":"...","user":{"id":"...","email":"...","role":"admin"}}}`. Lỗi nghiệp vụ có dạng `{"error":{"code":"...","message":"..."}}`. Validation trả 400, xác thực 401, phân quyền 403, không tìm thấy 404 và lỗi phụ thuộc/cơ sở dữ liệu 503. JSON sai định dạng trả 400 `INVALID_JSON`; payload vượt giới hạn trả 413 `PAYLOAD_TOO_LARGE`; route API không tồn tại trả 404. Gateway trả 502 `UPSTREAM_UNAVAILABLE` khi service phía sau không truy cập được. Endpoint health giữ response `status`/`dependencies` riêng để biểu diễn trạng thái vận hành.
-
-`GET /narrations/:id/:language` returns a `TRANSLATION_UNAVAILABLE` 404 when that attraction has no narration in the requested language; it never substitutes another language. Chinese and Thai narration responses include `translationStatus: "draft"` until the content team approves the translations. `audioUrl` is null until a recording is provided, so the frontend uses browser speech synthesis.
 
 ## Integration verification
 
@@ -51,7 +49,7 @@ The suite waits for Gateway health and exercises Gateway → Content → Attract
 
 ## Analytics events
 
-`POST /analytics/events` expects `visitorId` (browser-generated UUID), `eventType`, `language` (`vi`, `en`, `zh` or `th`) and optional `metadata`. `attractionId` is required for attraction-specific events, but may be omitted for `app_opened`. Do not send names, email addresses or raw GPS coordinates.
+`POST /analytics/events` expects `visitorId` (browser-generated UUID), `eventType`, `language` (`vi` / `en`) and optional `metadata`. `attractionId` is required for attraction-specific events, but may be omitted for `app_opened`. Do not send names, email addresses or raw GPS coordinates.
 
 Example:
 

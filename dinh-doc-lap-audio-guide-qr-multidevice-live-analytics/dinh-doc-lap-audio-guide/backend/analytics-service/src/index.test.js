@@ -12,11 +12,6 @@ describe("analytics input rules", () => {
     expect(isValidAnalyticsEvent(event)).toBe(true);
   });
 
-  it("accepts events in Chinese and Thai", () => {
-    expect(isValidAnalyticsEvent({ ...event, language: "zh" })).toBe(true);
-    expect(isValidAnalyticsEvent({ ...event, language: "th" })).toBe(true);
-  });
-
   it("accepts a QR scan event for the home page without an attraction", () => {
     expect(isValidAnalyticsEvent({ ...event, eventType: "qr_scan" })).toBe(true);
   });
