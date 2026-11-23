@@ -5,6 +5,8 @@ const allowedEvents = new Set([
   "visit_marked",
   "narration_started",
   "narration_completed",
+  "screen_viewed",
+  "ui_interaction",
 ]);
 const allowedLanguages = new Set(["vi", "en"]);
 const uuidPattern =
@@ -12,7 +14,9 @@ const uuidPattern =
 
 export function isValidAnalyticsEvent(body) {
   const { visitorId, eventType, attractionId, language } = body || {};
-  const needsAttraction = !["app_opened", "qr_scan"].includes(eventType);
+  const needsAttraction = ![
+    "app_opened", "qr_scan", "screen_viewed", "ui_interaction",
+  ].includes(eventType);
   const validAttractionId =
     typeof attractionId === "string" &&
     /^[a-zA-Z0-9_-]{1,100}$/.test(attractionId);

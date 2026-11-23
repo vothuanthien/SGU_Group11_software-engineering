@@ -25,7 +25,8 @@ export async function trackEvent({
 }) {
   if (
     !eventType ||
-    (!attractionId && !["app_opened", "qr_scan"].includes(eventType))
+    (!attractionId &&
+      !["app_opened", "qr_scan", "screen_viewed", "ui_interaction"].includes(eventType))
   )
     return;
   try {

@@ -142,7 +142,36 @@ function App() {
   const [selected, setSelected] = useState(null);
   const spoken = useRef(new Set());
   const trackedLocationRef = useRef("");
+  const lastScreen = useRef(null);
+  const isVisitorScreen =
+    ["/", "/map", "/feedback"].includes(location.pathname) ||
+    /^\/place\/[^/]+$/.test(location.pathname);
   const t = words[lang];
+  useEffect(() => {
+    if (lastScreen.current === location.pathname) return;
+    lastScreen.current = location.pathname;
+    if (isVisitorScreen)
+      void trackEvent({ eventType: "screen_viewed", language: lang });
+  }, [isVisitorScreen, lang, location.pathname]);
+  useEffect(() => {
+    if (!isVisitorScreen) return;
+    const trackInteraction = (event) => {
+      if (!event.isTrusted || !(event.target instanceof Element)) return;
+      const control = event.target.closest(
+        event.type === "change"
+          ? "select"
+          : "button:not(:disabled), a[href], [role='button']",
+      );
+      if (!control || control.closest("a[href='/admin']")) return;
+      void trackEvent({ eventType: "ui_interaction", language: lang });
+    };
+    document.addEventListener("click", trackInteraction, true);
+    document.addEventListener("change", trackInteraction, true);
+    return () => {
+      document.removeEventListener("click", trackInteraction, true);
+      document.removeEventListener("change", trackInteraction, true);
+    };
+  }, [isVisitorScreen, lang]);
   useEffect(() => {
     try {
       if (sessionStorage.getItem("dinh_app_opened")) return;
