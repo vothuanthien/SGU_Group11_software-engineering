@@ -136,6 +136,25 @@ app.get("/analytics/summary", admin, async (req, res) => {
       [days],
     );
 
+    const latestListenerQuery = await pool.query(
+      `WITH latest_listen AS (
+        SELECT visitor_id, created_at
+        FROM visitor_events
+        WHERE event_type = 'narration_started'
+          AND created_at >= NOW() - ($1::int * INTERVAL '1 day')
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+      )
+      SELECT l.created_at AS last_listened_at,
+        COUNT(*) FILTER (WHERE e.event_type = 'screen_viewed')::int AS screen_views,
+        COUNT(*) FILTER (WHERE e.event_type = 'ui_interaction')::int AS ui_interactions
+      FROM latest_listen l
+      JOIN visitor_events e ON e.visitor_id = l.visitor_id
+        AND e.created_at >= NOW() - ($1::int * INTERVAL '1 day')
+      GROUP BY l.created_at`,
+      [days],
+    );
+
     const historyQuery = await pool.query(
       `SELECT e.visitor_id::text AS visitor_id, e.attraction_id AS id, a.name_vi, a.name_en,
         BOOL_OR(e.event_type = 'qr_scan') AS scanned_qr,
@@ -169,6 +188,7 @@ app.get("/analytics/summary", admin, async (req, res) => {
         languageBreakdown,
         mostUsedLanguage: languageBreakdown[0]?.language || null,
         topAttractions: attractionQuery.rows,
+        latestListener: latestListenerQuery.rows[0] || null,
         visitorHistory: historyQuery.rows,
         daily: dayQuery.rows,
       },

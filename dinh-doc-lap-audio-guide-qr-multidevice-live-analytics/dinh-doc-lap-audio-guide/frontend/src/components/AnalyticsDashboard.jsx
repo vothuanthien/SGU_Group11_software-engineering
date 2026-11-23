@@ -17,6 +17,7 @@ const empty = {
   },
   languageBreakdown: [],
   topAttractions: [],
+  latestListener: null,
   visitorHistory: [],
   daily: [],
   mostUsedLanguage: null,
@@ -70,6 +71,8 @@ export default function AnalyticsDashboard({ lang = "vi" }) {
   }, [load]);
 
   const totals = data.totals || empty.totals;
+  const latestListener = data.latestListener;
+  const locale = isVi ? "vi-VN" : "en-US";
   const peak = Math.max(
     1,
     ...(data.daily || []).map((x) =>
@@ -153,6 +156,30 @@ export default function AnalyticsDashboard({ lang = "vi" }) {
           {msg("Đang tải số liệu…", "Loading analytics…")}
         </p>
       )}
+
+      <section className="form-card">
+        <h3>{msg("Người nghe gần nhất", "Latest listener")}</h3>
+        {latestListener ? (
+          <>
+            <p className="small">
+              {msg("Bắt đầu nghe lúc", "Started listening at")}{" "}
+              {new Date(latestListener.last_listened_at).toLocaleString(locale)}
+            </p>
+            {latestListener.screen_views || latestListener.ui_interactions ? (
+              <dl>
+                <dt>{msg("Số lượt qua màn hình", "Screen views")}</dt>
+                <dd>{latestListener.screen_views.toLocaleString(locale)}</dd>
+                <dt>{msg("Số lần thao tác", "UI interactions")}</dt>
+                <dd>{latestListener.ui_interactions.toLocaleString(locale)}</dd>
+              </dl>
+            ) : (
+              <p>{msg("Chưa ghi nhận dữ liệu màn hình hoặc thao tác.", "No screen views or interactions recorded yet.")}</p>
+            )}
+          </>
+        ) : (
+          <p>{msg("Chưa có lượt nghe trong khoảng thời gian đã chọn.", "No listens in the selected period.")}</p>
+        )}
+      </section>
 
       <div className="stats analytics-stats">
         <div>
