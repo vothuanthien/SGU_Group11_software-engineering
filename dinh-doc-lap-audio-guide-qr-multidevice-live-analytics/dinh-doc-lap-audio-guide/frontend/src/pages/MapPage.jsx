@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import api from "../api.js";
 
-const numberedMarkerIcon = (number, gold = false) =>
+const numberedMarkerIcon = (number, gold = false, nearest = false) =>
   L.divIcon({
-    className: `attraction-marker${gold ? " attraction-marker-gold" : ""}`,
+    className: `attraction-marker${gold ? " attraction-marker-gold" : ""}${nearest ? " attraction-marker-nearest" : ""}`,
     html: `<span><b>${String(number).padStart(2, "0")}</b></span>`,
     iconSize: [34, 42],
     iconAnchor: [17, 40],
@@ -33,6 +33,15 @@ function MapViewport({ points }) {
   return null;
 }
 
+function PickPointOnMap({ enabled, onPick }) {
+  useMapEvents({
+    click(event) {
+      if (enabled) onPick({ lat: event.latlng.lat, lng: event.latlng.lng });
+    },
+  });
+  return null;
+}
+
 export default function MapPage({ attractions, lang, t, gps, auto, setAuto, setNotice }) {
   const location = useLocation();
   const [selectedDestinationId, setSelectedDestinationId] = useState("");
@@ -42,6 +51,8 @@ export default function MapPage({ attractions, lang, t, gps, auto, setAuto, setN
   const [route, setRoute] = useState(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [routeError, setRouteError] = useState("");
+  const [isPickingPoint, setIsPickingPoint] = useState(false);
+  const [arbitraryPoint, setArbitraryPoint] = useState(null);
   const queryDestinationRef = useRef("");
 
   useEffect(() => {
@@ -133,6 +144,18 @@ export default function MapPage({ attractions, lang, t, gps, auto, setAuto, setN
   }, [attractions, route]);
 
   const selectedDestination = attractions.find((item) => item.id === selectedDestinationId);
+  const nearestAttraction = useMemo(() => {
+    if (!arbitraryPoint) return null;
+    return attractions
+      .filter((item) => item.latitude != null && item.longitude != null)
+      .map((item) => ({
+        item,
+        distance: L.latLng(arbitraryPoint.lat, arbitraryPoint.lng).distanceTo(
+          L.latLng(Number(item.latitude), Number(item.longitude)),
+        ),
+      }))
+      .sort((a, b) => a.distance - b.distance)[0] || null;
+  }, [arbitraryPoint, attractions]);
   const routeDistance = route?.distanceMeters >= 1000
     ? `${(route.distanceMeters / 1000).toFixed(2)} km`
     : `${Math.round(route?.distanceMeters || 0)} m`;
@@ -223,6 +246,31 @@ export default function MapPage({ attractions, lang, t, gps, auto, setAuto, setN
               </button>
             </div>
 
+            <div className="map-point-picker">
+              <button
+                type="button"
+                className={isPickingPoint ? "primary" : "secondary"}
+                aria-pressed={isPickingPoint}
+                onClick={() => {
+                  setArbitraryPoint(null);
+                  setIsPickingPoint((current) => !current);
+                }}
+              >
+                {isPickingPoint
+                  ? (lang === "vi" ? "Đang chọn — chạm lên bản đồ" : "Choose a point on the map")
+                  : (lang === "vi" ? "Chọn điểm bất kỳ trên bản đồ" : "Choose any point on the map")}
+              </button>
+              {nearestAttraction && (
+                <p className="map-nearest-result" aria-live="polite">
+                  {lang === "vi" ? "Điểm gần nhất: " : "Nearest attraction: "}
+                  <strong>{lang === "vi" ? nearestAttraction.item.name_vi : nearestAttraction.item.name_en}</strong>
+                  {` (${nearestAttraction.distance >= 1000
+                    ? `${(nearestAttraction.distance / 1000).toFixed(2)} km`
+                    : `${Math.round(nearestAttraction.distance)} m`})`}
+                </p>
+              )}
+            </div>
+
             {!selectedDestination && (
               <p className="map-route-empty">
                 {lang === "vi" ? "Chọn một điểm trong danh sách hoặc chạm vào marker trên bản đồ." : "Choose a stop from the list or tap a map marker."}
@@ -258,6 +306,13 @@ export default function MapPage({ attractions, lang, t, gps, auto, setAuto, setN
             scrollWheelZoom
             style={{ height: "100%", minHeight: 500, width: "100%" }}
           >
+            <PickPointOnMap
+              enabled={isPickingPoint}
+              onPick={(point) => {
+                setArbitraryPoint(point);
+                setIsPickingPoint(false);
+              }}
+            />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -270,7 +325,11 @@ export default function MapPage({ attractions, lang, t, gps, auto, setAuto, setN
                 <Marker
                   key={a.id}
                   position={[Number(a.latitude), Number(a.longitude)]}
-                  icon={numberedMarkerIcon(i + 1, selectedDestinationId === a.id || i % 2 === 1)}
+                  icon={numberedMarkerIcon(
+                    i + 1,
+                    nearestAttraction?.item.id === a.id || selectedDestinationId === a.id || i % 2 === 1,
+                    nearestAttraction?.item.id === a.id,
+                  )}
                   eventHandlers={{ click: () => selectDestination(a.id) }}
                 >
                   <Popup>
@@ -284,6 +343,15 @@ export default function MapPage({ attractions, lang, t, gps, auto, setAuto, setN
                   </Popup>
                 </Marker>
               ))}
+            {arbitraryPoint && (
+              <CircleMarker
+                center={[arbitraryPoint.lat, arbitraryPoint.lng]}
+                radius={9}
+                pathOptions={{ color: "#fff", weight: 3, fillColor: "#315b9a", fillOpacity: 1 }}
+              >
+                <Popup>{lang === "vi" ? "Điểm bạn đã chọn" : "Your selected point"}</Popup>
+              </CircleMarker>
+            )}
             {route?.coordinates?.length > 1 && (
               <>
                 <Polyline

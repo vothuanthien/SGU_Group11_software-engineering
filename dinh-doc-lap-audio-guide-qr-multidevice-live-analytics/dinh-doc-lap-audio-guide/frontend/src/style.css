@@ -371,6 +371,29 @@ main {
 .attraction-marker-gold span {
   background: #bd914b;
 }
+.attraction-marker-nearest span {
+  background: #f2cf45;
+  color: #24362b;
+  box-shadow: 0 0 0 4px rgb(242 207 69 / 30%), 0 3px 8px rgb(25 44 33 / 35%);
+}
+.attraction-marker-nearest span b {
+  color: #24362b;
+}
+.map-point-picker {
+  margin-top: 14px;
+}
+.map-point-picker button {
+  width: 100%;
+}
+.map-nearest-result {
+  margin: 9px 2px 0;
+  color: #526057;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.map-nearest-result strong {
+  color: #1c4939;
+}
 .detail {
   max-width: 1120px;
   margin: 45px auto 80px;
